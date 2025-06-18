@@ -1,7 +1,11 @@
-# GROUP NAME HERE
+# Temporal variation in taxonomic and functional diversity and nutrient cycling of consumers across aquatic ecosystems and LTER sites
 
 Principal Investigators:
-- PI NAME HERE
+
+- Shalanda Grier
+- Lauren Enright
+- Camille Magneville
+- Mackenzie White
 
 ## Script Explanations
 
