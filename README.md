@@ -1,4 +1,4 @@
-# Temporal variation in taxonomic and functional diversity and nutrient cycling of consumers across aquatic ecosystems and LTER sites
+# Consumer Functional Diversity
 
 Principal Investigators:
 
