@@ -28,12 +28,13 @@ CFD_drive <- googledrive::as_id("https://drive.google.com/drive/folders/1n6iqs3a
 #could be a loop 
 
 #North Lakes LTER 
-data_folder1 <- googledrive::drive_ls(path = CFD_drive,
-                                     type= "csv", 
-                                     pattern ="ntl90_v11", overwrite= T)
+#data in long format no need to transform 
+#data_folder1 <- googledrive::drive_ls(path = CFD_drive,
+                                     #type= "csv", 
+                                     #pattern ="ntl90_v11", overwrite= T)
 
 
-googledrive::drive_download(file=data_folder1$id)
+#googledrive::drive_download(file=data_folder1$id)
 
 
 #Arctic LTER 
@@ -55,4 +56,34 @@ googledrive::drive_download(file=data_folder3$id)
 
 ###### transform data from each site from wide to long format then export processed csv to shared drive 
 
+#Arctic "Toolik Lake"  LTER 
+
+Arctic_wide <- read.csv("2003-2022ArcLTERZoops.csv")
+
+
+Arctic_long <- Arctic_wide %>% tidyr::pivot_longer(cols = -c(1:4), names_to = "species", values_to = "density")
+
+#remove "." between across column names 
+names(Arctic_long) <- gsub("\\.", " ",names(Arctic_long))
+
+#remove "." across species names 
+Arctic_long$species <- gsub("\\.", " ", Arctic_long$species)
+
+
+#write csv locally and to drive 
+
+write.csv(Arctic_long, "ArcLTERZoopsLong.csv", row.names=FALSE)
+#googledrive::drive_upload("ArcLTERZoopsLong.csv", path = "CFD_drive")
+
+
+# Palmer LTER 
+
+Palmer_wide <- read.csv("ZooplanktonDensity-EDI-20250415 .csv")
+
+# remove all bio-volume columns with suffix "Vol" and remove "Num" from species names that indicate density (num/1000m3)
+
+Palmer_long <- Palmer_wide %>% dplyr::select(-ends_with("Vol")) %>% tidyr::pivot_longer(cols = -c(1:26), names_to = "species", values_to = "density")
+Palmer_long$species <- gsub("Num", "", Palmer_long$species)
+
+write.csv(Palmer_long, "ZooplanktonDensity_long.csv", row.names=FALSE)
 
