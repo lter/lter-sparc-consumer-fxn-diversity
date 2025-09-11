@@ -16,6 +16,7 @@ rm(list = ls()); gc()
 
 # Make the folders used by later scripts
 dir.create(path = file.path("data", "raw"), showWarnings = F, recursive = T)
+dir.create(path = file.path("data", "traits"), showWarnings = F)
 
 ## --------------------------- ##
 # Download Data Key ----
@@ -66,6 +67,28 @@ drive_raw
 purrr::walk2(.x = drive_raw$id, .y = drive_raw$name,
              .f = ~ googledrive::drive_download(file = .x, overwrite = T, 
                                                 path = file.path("data", "raw", .y)))
+
+# Clear environment
+rm(list = ls()); gc()
+
+## --------------------------- ##
+# Download Zooplankton Traits ----
+## --------------------------- ##
+
+# Identify the folder
+drive_folder <- googledrive::as_id("https://drive.google.com/drive/folders/1AxdFQ0EjNqaLUTzms4prF52cqbVFec0F")
+
+# Identify the relevant file(s) in that folder
+drive_zootrt <- googledrive::drive_ls(path = drive_folder) %>% 
+  dplyr::filter(name == "trait_dataset_level2-2023-09-14.csv")
+
+# Check that worked
+drive_zootrt
+
+# Download it
+purrr::walk2(.x = drive_zootrt$id, .y = drive_zootrt$name,
+             .f = ~ googledrive::drive_download(file = .x, overwrite = T, 
+                                                path = file.path("data", "traits", .y)))
 
 # Clear environment
 rm(list = ls()); gc()
