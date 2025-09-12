@@ -32,7 +32,7 @@ dplyr::glimpse(key_v2)
 
 # Harmonize the data!
 combo_v1 <- ltertools::harmonize(key = key_v2, quiet = F,
-                                 raw_folder = file.path("data", "raw"))
+                                 raw_folder = file.path("data", "preprocess"))
 
 # Check structure
 dplyr::glimpse(combo_v1)
