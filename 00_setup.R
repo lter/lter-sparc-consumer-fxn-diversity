@@ -15,7 +15,7 @@ rm(list = ls()); gc()
 ## --------------------------- ##
 
 # Make the folders used by later scripts
-dir.create(path = file.path("data", "raw"), showWarnings = F, recursive = T)
+dir.create(path = file.path("data", "preprocess"), showWarnings = F, recursive = T)
 dir.create(path = file.path("data", "traits"), showWarnings = F)
 
 ## --------------------------- ##
@@ -45,7 +45,7 @@ rm(list = ls()); gc()
 ## --------------------------- ##
 
 # Identify the folder
-drive_folder <- googledrive::as_id("https://drive.google.com/drive/folders/1AxdFQ0EjNqaLUTzms4prF52cqbVFec0F")
+drive_folder <- googledrive::as_id("https://drive.google.com/drive/folders/1LE1Rr1Hfa1uZPvZoUIr1t18khnsnbeFV")
 
 # Read in the data key
 key_df <- read.csv(file = file.path("data", "CFD_Datakey.csv"))
@@ -66,7 +66,7 @@ drive_raw
 # Download it
 purrr::walk2(.x = drive_raw$id, .y = drive_raw$name,
              .f = ~ googledrive::drive_download(file = .x, overwrite = T, 
-                                                path = file.path("data", "raw", .y)))
+                                                path = file.path("data", "preprocess", .y)))
 
 # Clear environment
 rm(list = ls()); gc()
@@ -76,7 +76,7 @@ rm(list = ls()); gc()
 ## --------------------------- ##
 
 # Identify the folder
-drive_folder <- googledrive::as_id("https://drive.google.com/drive/folders/1AxdFQ0EjNqaLUTzms4prF52cqbVFec0F")
+drive_folder <- googledrive::as_id("https://drive.google.com/drive/folders/1UAq72kFD8Hh9uV1_He1ijJQ1m4lVg7eK")
 
 # Identify the relevant file(s) in that folder
 drive_zootrt <- googledrive::drive_ls(path = drive_folder) %>% 
