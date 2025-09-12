@@ -5,92 +5,75 @@
 ## Standarize and combine (i.e., "harmonize") input datasets
 
 # Load libraries
-librarian::shelf(tidyverse, googledrive)
+librarian::shelf(tidyverse, googledrive, fs)
 
 # Clear environment & collect garbage
 rm(list = ls()); gc()
+
 
 ## --------------------------- ##
 # Make Folders ----
 ## --------------------------- ##
 
-# Make the folders used by later scripts
-dir.create(path = file.path("data", "raw"), showWarnings = F, recursive = T)
-dir.create(path = file.path("data", "traits"), showWarnings = F)
+# list the folder that we need to work on 
 
-## --------------------------- ##
-# Download Data Key ----
-## --------------------------- ##
+local_root <- "data"  #local root folder
 
-# Identify the folder
-drive_folder <- googledrive::as_id("https://drive.google.com/drive/folders/1AxdFQ0EjNqaLUTzms4prF52cqbVFec0F")
+# List of folder names on Google Drive
+folders <- c(
+  "01_community_raw_data",
+  "02_community_processed_data",
+  "11_traits_raw_data",
+  "12_traits_processed_data",
+  "00_keys"
+)
 
-# Identify the relevant file(s) in that folder
-drive_key <- googledrive::drive_ls(path = drive_folder) %>% 
-  dplyr::filter(name == "CFD_Datakey")
+ # Identify the folder
+parent <- googledrive::as_id("https://drive.google.com/drive/folders/1AxdFQ0EjNqaLUTzms4prF52cqbVFec0F")
+ 
+ # Get children folders under parent
+children <- drive_ls(parent, type = "folder")
+  
+# ---- FOR LOOP ----
+for (fld in folders) {
+  hit <- children[children$name == fld, ]
+  
+  if (nrow(hit) == 0) {
+    warning("Subfolder not found: ", fld)
+    next
+  }
+  
+  local_dir <- path(local_root, fld)
+  dir_create(local_dir, recurse = TRUE)
+  
+  message("\n== Downloading folder: ", fld, " ==")
+  
+  # List everything inside this subfolder (non-recursive)
+  items <- drive_ls(hit$id)
+  
+  if (nrow(items) == 0) {
+    message("  (empty)")
+    next
+  }
+  
+  for (i in seq_len(nrow(items))) {
+    it <- items[i, ]
+    name <- it$name
+    mime <- it$drive_resource[[1]]$mimeType
+    
+    # Build output filename
+    out_path <- path(local_dir, paste0(path_ext_remove(name), ".csv"))
+    
+    if (mime %in% c("application/vnd.google-apps.spreadsheet")) {
+      # Export Google-native files as CSV
+      message("⬇️  Exporting as CSV: ", out_path)
+      drive_download(as_id(it$id), path = out_path, type = "csv", overwrite = TRUE)
+    } else {
+      # For non-Google-native: just download as-is
+      message("⬇️  Downloading as-is: ", path(local_dir, name))
+      drive_download(as_id(it$id), path = path(local_dir, name), overwrite = TRUE)
+    }
+  }
+}
 
-# Check that worked
-drive_key
-
-# Download it
-purrr::walk2(.x = drive_key$id, .y = drive_key$name,
-             .f = ~ googledrive::drive_download(file = .x, overwrite = T, type = "csv",
-                                                path = file.path("data", .y)))
-
-# Clear environment
-rm(list = ls()); gc()
-
-## --------------------------- ##
-# Download 'Raw' Data ----
-## --------------------------- ##
-
-# Identify the folder
-drive_folder <- googledrive::as_id("https://drive.google.com/drive/folders/1AxdFQ0EjNqaLUTzms4prF52cqbVFec0F")
-
-# Read in the data key
-key_df <- read.csv(file = file.path("data", "CFD_Datakey.csv"))
-
-# Check structure
-dplyr::glimpse(key_df)
-
-# What files are referenced in the key?
-sort(unique(key_df$source))
-
-# Identify the relevant file(s) in the Drive folder
-drive_raw <- googledrive::drive_ls(path = drive_folder) %>% 
-  dplyr::filter(name %in% key_df$source)
-
-# Check that worked
-drive_raw
-
-# Download it
-purrr::walk2(.x = drive_raw$id, .y = drive_raw$name,
-             .f = ~ googledrive::drive_download(file = .x, overwrite = T, 
-                                                path = file.path("data", "raw", .y)))
-
-# Clear environment
-rm(list = ls()); gc()
-
-## --------------------------- ##
-# Download Zooplankton Traits ----
-## --------------------------- ##
-
-# Identify the folder
-drive_folder <- googledrive::as_id("https://drive.google.com/drive/folders/1AxdFQ0EjNqaLUTzms4prF52cqbVFec0F")
-
-# Identify the relevant file(s) in that folder
-drive_zootrt <- googledrive::drive_ls(path = drive_folder) %>% 
-  dplyr::filter(name == "trait_dataset_level2-2023-09-14.csv")
-
-# Check that worked
-drive_zootrt
-
-# Download it
-purrr::walk2(.x = drive_zootrt$id, .y = drive_zootrt$name,
-             .f = ~ googledrive::drive_download(file = .x, overwrite = T, 
-                                                path = file.path("data", "traits", .y)))
-
-# Clear environment
-rm(list = ls()); gc()
-
-# End ----
+message("\n✅ Finished downloading all requested subfolders (Google-native exported to CSV).")

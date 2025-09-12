@@ -1,3 +1,10 @@
+#----------------------------------##
+# SPARC - Consumer Functional Diversity (CFD) 
+###--------------------------------##
+
+# Script author(s): Shalanda Grier, Li Kui, Nick Lyons
+# Sites: Palmer LTER, Arctic LTER, North Lakes LTER
+
 ## ---------------------------------------------------- ##
 # CFD - Step 2A: Subset Zookplankton Species List
 ## ---------------------------------------------------- ##
@@ -87,7 +94,7 @@ sub_v99 <- sub_v3
 dplyr::glimpse(sub_v99)
 
 # Make a filename for it
-sub_file <- "02a_cfd-zooplankton-subset.csv"
+sub_file <- "02a_traits_harmonized.csv"
 
 # Export
 write.csv(x = sub_v99, row.names = F, na = '',
