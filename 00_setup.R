@@ -15,7 +15,6 @@ rm(list = ls()); gc()
 # Make Folders ----
 ## --------------------------- ##
 
-# list the folder that we need to work on 
 
 local_root <- "data"  #local root folder
 
@@ -75,5 +74,6 @@ for (fld in folders) {
     }
   }
 }
+
 
 message("\n✅ Finished downloading all requested subfolders (Google-native exported to CSV).")
