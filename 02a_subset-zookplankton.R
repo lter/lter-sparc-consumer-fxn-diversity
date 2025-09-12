@@ -36,16 +36,46 @@ zootrt_v2 <- zootrt_v1 %>%
   dplyr::select(scientificName, traitName:traitUnit, valueType) %>% 
   dplyr::distinct() %>% 
   # And only desired traits
-  dplyr::filter(valueType == "numeric") %>% 
-  dplyr::filter(traitName %in% c("dryWeight")) %>% 
+  dplyr::filter(traitName %in% c("feedingMode", "dryWeight", "wetWeight", 
+                                 "bodyLengthMax", "verticalDistribution", 
+                                 "habitatAssociation", "reproductiveMode", 
+                                 "fecundity", "respirationRate", 
+                                 "dielVerticalMigration")) %>% 
   # Combine trait category with units
   dplyr::mutate(trait_actual = paste0(traitName, "__", traitUnit)) %>% 
-  # Ditch superseded columns and pivot wider
-  dplyr::select(-valueType, -traitName, -traitUnit) %>% 
-  tidyr::pivot_wider(names_from = trait_actual, values_from = traitValue)
-
+  # Ditch superseded columns 
+  dplyr::select(-traitName, -traitUnit)
+  
 # Check structure
 dplyr::glimpse(zootrt_v2)
+
+# Split numeric and categorical trait info
+zootrt_num_v1 <- dplyr::filter(zootrt_v2, valueType == "numeric")
+zootrt_cat_v1 <- dplyr::filter(zootrt_v2, valueType == "categorical")
+
+# Get a single value for each taxon
+## Numeric
+zootrt_num_v2 <- zootrt_num_v1 %>% 
+  dplyr::group_by(scientificName, trait_actual) %>% 
+  dplyr::summarize(traitValue = as.character(mean(as.numeric(traitValue), na.rm = T)),
+                   .groups = "keep") %>% 
+  dplyr::ungroup() %>% 
+  tidyr::pivot_wider(names_from = trait_actual, values_from = traitValue)
+  
+## Categorical
+zootrt_cat_v2 <- zootrt_cat_v1 %>% 
+  dplyr::group_by(scientificName, trait_actual) %>% 
+  dplyr::summarize(traitValue = paste0(traitValue, collapse = "; "),
+                   .groups = "keep") %>% 
+  dplyr::ungroup() %>% 
+  tidyr::pivot_wider(names_from = trait_actual, values_from = traitValue)
+
+# Re-combine, then ditch superseded columns and pivot wider
+zootrt_v3 <- zootrt_num_v2 %>% 
+  dplyr::left_join(y = zootrt_cat_v2, by = "scientificName")
+  
+# Check structure
+dplyr::glimpse(zootrt_v3)
 
 ## --------------------------- ##
 # Compare Taxa ----
