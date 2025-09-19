@@ -235,9 +235,5 @@ NorthLakes_temp <- NorthLakes_dry_wt %>%
 ###################### North Lakes end  ##########################################
 
 
-
-
-
-
 ##remove species name from each dataframe if taxonomicLevel  does not equal species then each site will be 'ready' for next step. 
 
