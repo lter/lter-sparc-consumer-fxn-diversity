@@ -61,7 +61,8 @@ data_02_date <- data_02 %>%
 
 ###  Wrangling zooplankton species names and pull kingdom, phylum, class, order, family, and species names 
 
-#code junk  below adapted from CND step1_consumer_data_harmonization.R originally written by Angel Chen 
+################code junk below adapted from CND step1_consumer_data_harmonization.R originally written by Angel Chen #######
+
 # Li can you try to run this...wifi not great at home at the moment and timing out. 
 
 #zoo_taxa <- zoo_dry_wts_d1 %>% 
@@ -123,7 +124,7 @@ data_02_date <- data_02 %>%
 # Left join our current tidy dataframe with the table of taxonomic info
 #zoo_taxa_tidy <- left_join(zoo_dry_wts_d1, zoo_taxa_v2, by = c("scientific_name" = "scientific_name_check"))
   
-
+##################### end code chunk ###############
 
 #fill in remaining taxonomy columns where applicable. Can do manually using mutate and case_when - Shalanda 
 
