@@ -121,7 +121,7 @@ data_02_date <- data_02 %>%
 
 
 # Left join our current tidy dataframe with the table of taxonomic info
-#zoo_taxa_tidy <- left_join(zoo_dry_wts_d1, zoo_taxa_v2, by = c("scientific_name" = "scientific_name_fix"))
+#zoo_taxa_tidy <- left_join(zoo_dry_wts_d1, zoo_taxa_v2, by = c("scientific_name" = "scientific_name_check"))
   
 
 
