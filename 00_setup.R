@@ -21,10 +21,10 @@ local_root <- "data"  #local root folder
 # List of folder names on Google Drive
 folders <- c(
   "01_community_raw_data",
-  "02_community_processed_data",
-  "11_traits_raw_data",
-  "12_traits_processed_data",
-  "00_keys"
+   "02_community_processed_data",
+   "11_traits_raw_data",
+   "12_traits_processed_data",
+   "00_keys"
 )
 
  # Identify the folder

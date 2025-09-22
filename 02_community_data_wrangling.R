@@ -7,7 +7,16 @@
 
 
 #Purpose
-#1) Data cleaning for each site to include: species/scientific names, standarized densities, diet_cat and dry/wt per ind
+#1) Data cleaning for each site to include: species/scientific names, standardized densities, diet_cat and dry/wt per ind
+
+
+#remaining questions/actions:
+# some species don't have matching name in ITIS, double check the "Scientific Name" column; If for sure there is no matching species in ITIS, should be hardcode the taxa info at the end of the zoo_taxa_v2 data frame
+# the taxa table has a species column, the same as scientific name; Right now, this code keep only the scientific name column; should we keep both columns?
+# We remove the phylum and family columns from the dry weight data since we will get that info from ITIS; is that ok?
+# change the name from group to taxa_group so we don't have to change the code everywhere
+# what if there are more other taxa got added, how do we update the taxa table? So far it looks like a mannual process? 
+# move the zoo_dry_wts data from the trait folder to the community folder. 
 
 # Load libraries
 librarian::shelf(tidyverse, ltertools, stringr, taxize, purrr)
@@ -15,226 +24,212 @@ librarian::shelf(tidyverse, ltertools, stringr, taxize, purrr)
 # Clear environment & collect garbage
 rm(list = ls()); gc()
 
+##### user input###
 
+run_species_check = "N" # "Y" indicate we need to run species check against ITIS "N" indicate we can skip the checking process
+
+###  Wrangling zooplankton species names and pull kingdom, phylum, class, order, family, and species names from ITIS
+# read in zooplankton dry weight data 
+zoo_dry_wts <- read.csv(file=file.path('data', "01_community_raw_data", "Zooplankton_dry_ind_wt.csv"),na.strings=c("NA","NA ",""))
+
+
+#remove instances of 'sp.',  'spp.' , 'sp'  , 'spp. '; the scientific names and the "species" column is the same. 
+
+zoo_dry_wts_d1 <- zoo_dry_wts %>% 
+  dplyr::mutate(scientific_name = stringr::str_replace(scientific_name, " sp.$| spp.$| sp$| spp. $", ""), 
+# Remove trailing spaces from 'text_column'
+                scientific_name = str_trim(scientific_name, side = "right")) %>%
+  dplyr::select(-species, -phylum,-family)
+
+#look for duplicates
+# peace <- zoo_dry_wts_d1 %>%
+#   dplyr::group_by(program,scientific_name) %>%
+#   dplyr::summarise(n=n()) %>%
+#   dplyr::filter(n>1)
+# peace1 <- zoo_dry_wts_d1 %>%
+#   dplyr::group_by(program,sp_code) %>%
+#   dplyr::summarise(n=n()) %>%
+#   dplyr::filter(n>1)
+
+##########Only run this if we need to check the species against ITIS###############
+
+if (run_species_check =="Y"){
+  
+zoo_taxa <- zoo_dry_wts_d1 %>%
+ #select the scientific_name column. This column originally filled based on LTER sites reported species names
+ dplyr::select(scientific_name)%>%
+#Grab all unique species names
+ dplyr::distinct() %>%
+#Create an empty placeholder column to fill later
+ dplyr::mutate(kingdom = NA,
+               phylum = NA,
+               class = NA,
+               order = NA,
+               family = NA,
+               genus = NA,
+               species = NA)
+
+
+### add kingdom, phylum, order, family, genus and species name using taxize 
+
+for (i in 1:length(zoo_taxa$scientific_name)) {
+  
+  sp <- zoo_taxa[i, ]$scientific_name
+  
+  # Query species taxonomic information with error handling
+  identified_species_names <- tryCatch(
+    taxize::tax_name(
+      sci = sp,
+      get = c("kingdom", "phylum", "class", "order", "family", "genus", "species"),
+      db = "itis",
+      accepted = TRUE,
+      ask = FALSE
+    ),
+    error = function(e) NULL
+  )
+  
+  # Query species for common name with error handling; Note, ITIS does not have common names; IGNORE this step
+  
+  # Fill taxonomy info safely
+  zoo_taxa[i, ]$kingdom <- if (!is.null(identified_species_names)) paste0(identified_species_names$kingdom, collapse = "") else NA
+  zoo_taxa[i, ]$phylum  <- if (!is.null(identified_species_names)) paste0(identified_species_names$phylum, collapse = "") else NA
+  zoo_taxa[i, ]$class   <- if (!is.null(identified_species_names)) paste0(identified_species_names$class, collapse = "") else NA
+  zoo_taxa[i, ]$order   <- if (!is.null(identified_species_names)) paste0(identified_species_names$order, collapse = "") else NA
+  zoo_taxa[i, ]$family  <- if (!is.null(identified_species_names)) paste0(identified_species_names$family, collapse = "") else NA
+  zoo_taxa[i, ]$genus   <- if (!is.null(identified_species_names)) paste0(identified_species_names$genus, collapse = "") else NA
+  zoo_taxa[i, ]$species <- if (!is.null(identified_species_names)) paste0(identified_species_names$species, collapse = "") else NA
+  
+} #close the for loop
+
+# --- Error check at the end ---
+# Find which species didn’t get a match
+unmatched <- zoo_taxa[zoo_taxa$kingdom=="NA", "scientific_name"]
+
+if (length(unmatched) > 0) {
+  message("Warning: No ITIS records found for these species:\n",
+          paste(unmatched, collapse = ", "))
+} else {
+  message("All species matched successfully!")
+} 
+
+zoo_taxa_v2 <- zoo_taxa 
+#Replace the string "NA" with actual NA values
+zoo_taxa_v2[zoo_taxa_v2 == "NA"] <- NA
+
+write.csv(x = zoo_taxa_v2, row.names = F, na = '',
+          file = file.path("data", "02_community_processed_data","02_zoo_taxa_checked.csv"))
+} # close the species check 
+
+# if no need to check the taxa information, we can read the file directly
+zoo_taxa_checked<- read.csv(file = file.path("data", "02_community_processed_data", "02_zoo_taxa_checked.csv"),na="")
+
+
+# Left join our current tidy dataframe with the table of taxonomic info
+zoo_taxa_ready <- left_join(zoo_dry_wts_d1, zoo_taxa_checked, by = "scientific_name") %>%
+     dplyr::select(-c('drymass_mg','drymass_source','additional.notes')) %>% #remove unnecessary columns
+     dplyr::rename(project=program) #rename scientific_name to sp_code to match community data column name
+##################### end taxa cleaning ###############
+
+#fill in remaining taxonomy columns where applicable. Can do manually using mutate and case_when - Shalanda 
+
+
+#### community data ##############
 # read in harmonized data and start wrangling by project 
 
-data_02 <- read.csv(file = file.path("data", "02_community_processed_data", "02_consumer_harmonized.csv"))
-
-
-
-# read in zooplankton dry weight data 
-
-zoo_dry_wts <- read.csv(file=file.path('data', "11_traits_raw_data", "Zooplankton_dry_ind_wt.csv"))
-
-#remove instances of 'sp.',  'spp.' , 'sp'  , 'spp. ' 
-
-zoo_dry_wts_d1 <- zoo_dry_wts %>% dplyr::mutate(scientific_name = stringr::str_replace(scientific_name, " sp.$| spp.$| sp$| spp. $", "")) 
-
-# Remove trailing spaces from 'text_column'
-zoo_dry_wts_d1$scientific_name<- str_trim(zoo_dry_wts_d1$scientific_name, side = "right")
-
-################## General Wrangling before site level data wrangling #####################################
+com_dt<- read.csv(file = file.path("data", "02_community_processed_data", "02_consumer_harmonized.csv"))
 
 
 #### General Wrangling of Harmonized Community Data 
 ## attend to capitalization 
 
 #change capitalization of species names to lower case 
-data_02$species <- tolower(data_02$species)
-
-#capitilize the first letter of each species 
-data_02$species <-str_to_sentence(data_02$species) 
-
-#change date from character to date and separate year, month, and day 
-
-data_02$date <- as.Date(data_02$date, format = "%Y-%m-%d")
-
-data_02_date <- data_02 %>% 
-  #separate year, month and date into distinct columns 
-  dplyr::mutate(year = lubridate::year(date),month = lubridate::month(date), day = lubridate::day(date))%>%
-  # bring columns related to the date behind the date column
-  dplyr::relocate(c(year,month,day), .before = subsite_level2) 
-
-
-
-################ End #######
-
-###  Wrangling zooplankton species names and pull kingdom, phylum, class, order, family, and species names 
-
-################code junk below adapted from CND step1_consumer_data_harmonization.R originally written by Angel Chen #######
-
-# Li can you try to run this...wifi not great at home at the moment and timing out. 
-
-#zoo_taxa <- zoo_dry_wts_d1 %>% 
-#  select the scientific_name column. This column originally filled based on LTER sites reported species names
-#  dplyr::select(scientific_name)%>%
-  #Grab all unique species names 
-#  dplyr::distinct() %>%
-  #Create an empty placeholder column to fill later 
-#  dplyr::mutate(kingdom = NA, 
-#                phylum = NA,
-#                class = NA,
-#                order = NA,
-#                family = NA,
-#                genus = NA, 
-#                species = NA,
-#                common_name = NA) %>% 
-  #Rename species column 
-#  dplyr::rename(scientific_name_check = scientific_name)
-
-
-
-### add kingdom, phylum, order, family, genus and species name using taxcise 
-
-#for (i in 1:length(zoo_taxa$scientific_name_check)){
-  
-  #Query species taxonomic information 
-#  identified_species_names <- taxize::tax_name(sci = zoo_taxa[i,]$scientific_name_check,
-#                                                get = c("kindgom", "phylum", "class", "order", "family", "genus", "species"),
-#                                                db = "itis",
-#                                                accepted = TRUE,
-#                                                ask = FALSE)
-  #Query species for common name 
-#  identified_common_names <- taxize::sci2comm(sci = zoo_taxa[i,]$scientific_name_check,
-#                                               db = "itis",
-#                                              accepted = TRUE,
-#                                              ask = FALSE)
-
-  
-  # Save the query results
-  # In case the query returns NULL, the paste0(..., collapse = "") will coerce NULL into an empty string
-#  zoo_taxa[i,]$kingdom <- paste0(identified_species_names$kingdom, collapse = "")
-#  zoo_taxa[i,]$phylum <- paste0(identified_species_names$phylum, collapse = "")
-#  zoo_taxa[i,]$class <- paste0(identified_species_names$class, collapse = "")
-#  zoo_taxa[i,]$order <- paste0(identified_species_names$order, collapse = "")
-#  zoo_taxa[i,]$family <- paste0(identified_species_names$family, collapse = "")
-#  zoo_taxa[i,]$genus <- paste0(identified_species_names$genus, collapse = "")
-#  zoo_taxa[i,]$species <- paste0(identified_species_names$species, collapse = "")
-#  zoo_taxa[i,]$common_name <- paste0(identified_common_names[[1]], collapse = "; ")
-  
-#}
-
-#zoo_taxa_v2 <- zoo_taxa %>%
-  # Replace the string "NA" with actual NA values
-#  dplyr::mutate(dplyr::across(.cols = dplyr::everything(), .fns = ~dplyr::na_if(., y = "NA"))) %>%
-  # Replace empty strings with NA values
-#  dplyr::mutate(dplyr::across(.cols = dplyr::everything(), .fns = ~dplyr::na_if(., y = "")))
-
-
-# Left join our current tidy dataframe with the table of taxonomic info
-#zoo_taxa_tidy <- left_join(zoo_dry_wts_d1, zoo_taxa_v2, by = c("scientific_name" = "scientific_name_check"))
-  
-##################### end code chunk ###############
-
-#fill in remaining taxonomy columns where applicable. Can do manually using mutate and case_when - Shalanda 
-
-#!!!Once code above is complete replace 'replace zoo_dry_wts_d1' with 'zoo_taxa_ready' in code down below and run 
-
-
-
+com_dt2 <- com_dt %>%
+  dplyr::mutate(species = tolower(species),
+                #remove trailing spaces from species column
+                species = str_trim(species, side = "right"),
+                #capitilize the first letter of each species 
+                species = str_to_sentence(species),
+                #change date from character to date and separate year, month, and day 
+                date = as.Date(date)
+                ##separate year, month and date into distinct columns; not necessary for now
+                # year = lubridate::year(date),
+                # month = lubridate::month(date), 
+                # day = lubridate::day(date)
+                ) 
+  # # bring columns related to the date behind the date column
+  # relocate(c(date,year,month,day), .before = site) 
 
 
 #### Arctic ###############
 
-
-Arctic  <- data_02_date %>% 
+Arctic  <-com_dt2 %>% 
   dplyr::filter(project == "Arctic")
 
 
 #convert density from num/l to num/m3 
 
-
 Arctic_den <- Arctic %>% 
-  dplyr::mutate(`density_num/m3` = density*1000)
+  dplyr::mutate(`density_num/m3` = density*1000,
+                temp_c = "7.074284") %>%
+  mutate(sp_code = species) %>%
+  dplyr::select(-species) # remove the species column here so it doesn't conflict with the taxa join later.
 
-#add dry weight, diet_cat and scientific names and rename group column 
-
-Arctic_dry_wt <- dplyr::left_join(Arctic_den,zoo_dry_wts_d1, by= join_by("species" == "sp_code")) %>%
-  dplyr::select(-c('program','drymass_mg','drymass_source','additional.notes')) %>%
-  dplyr::rename(taxa_group = group)
-
-Arctic_species_col <- Arctic_dry_wt %>% 
-  dplyr::select(-species) %>%
-  dplyr::rename(species= species.y )%>%
-#add temp data. Mean temp of Toolik main lake from 2004 - 2021 
-  dplyr::mutate(temp_c = "7.074284")
-
-
+Arctic_ready <- Arctic_den
 ########################### end #############################
-
-
-
-
 
 #########Palmer LTER 
 
-Palmer <- data_02_date %>%
+Palmer <-com_dt2 %>%
   dplyr::filter(project == "Palmer ")
 
-
 #convert density from 1000m3 to 1m3. 
-
-Palmer_den <- Palmer %>% 
-  dplyr::mutate(`density_num/m3` = density/1000)
-
-#add dry weight, diet_cat and scientific names and rename 'group' column 
-
-Palmer_dry_wt <- dplyr::left_join(Palmer_den, zoo_dry_wts_d1, by= join_by("species" == "sp_code")) %>%
-  dplyr::select(-c('program','drymass_mg','drymass_source','additional.notes')) %>%
-  dplyr::rename(taxa_group = group)
-
-Palmer_species_col <- Palmer_dry_wt %>% 
-  dplyr::select(-species) %>%
-  dplyr::rename(species= species.y )
-
 #add temp data. SST retrieved from Palmer LTER weather station. 
 #Note average SST temp over duration of survey period 2009-2024. 
-
 #I believe every site had one temp value from CND or mean value for every year site combination? Not necessarily by depth. 
 
-Palmer_temp <- Palmer_species_col %>%
-  dplyr::mutate(temp_c = "-0.4598606")
+Palmer_den <- Palmer %>% 
+  dplyr::mutate(`density_num/m3` = density/1000,
+                 temp_c = "-0.4598606") %>%
+  mutate(sp_code = species) %>%
+  dplyr::select(-species) # remove the species column here so it doesn't conflict with the taxa join later.
 
-
-
-
+Palmer_ready <- Palmer_den
 ######### end ################
-
-
-
 
 ###### North Lakes LTER 
 
-NorthLakes <- data_02_date %>% 
+NorthLakes <- com_dt2 %>% 
   dplyr::filter(project == "NorthLakes")
 
-
-
 #convert density from m2 to m3. Divide density by tow_depth per EDI 
-
-NorthLakes_den <- NorthLakes %>% 
-  dplyr::mutate(`density_num/m3` = density/subsite_level2)
-
-#add dry weight, diet_cat and scientific names and rename 'group' column 
-
-NorthLakes_dry_wt <- dplyr::left_join(NorthLakes_den, zoo_dry_wts, by= join_by(species)) %>%
-  dplyr::select(-c('program','drymass_mg','drymass_source','additional.notes')) %>%
-  dplyr::rename(taxa_group = group)
-
-
 #add temperature data for Southern Lakes  <https://lter.limnology.wisc.edu/core-study-lakes/>
 #note temp not by tow depths 
 
-NorthLakes_temp <- NorthLakes_dry_wt %>% 
+NorthLakes_den <- NorthLakes %>% 
+  dplyr::mutate(`density_num/m3` = density/subsite_level2)%>%
   mutate(temp_c = case_when(site %in% 'FI' ~ 24.6,
                             site %in% 'WI' ~ 24.2,
                             site %in% 'MO' ~ 23.9,
-                            site %in% 'ME' ~ 23.2))
+                            site %in% 'ME' ~ 23.2)) %>%
+  dplyr::select(-species) # remove the species column here so it doesn't conflict with the taxa join later. 
 
-
+ NorthLakes_ready <- NorthLakes_den
 
 ###################### North Lakes end  ##########################################
+
+#### Combine all sites back together and add dry weight, diet_cat and scientific names
+ 
+com_dt3 <- rbind(Arctic_ready, Palmer_ready, NorthLakes_ready) %>%
+  dplyr::select(-c(density)) %>% #remove original density column
+#add dry weight, diet_cat and scientific names and rename group column 
+ dplyr::left_join(zoo_taxa_ready, by= c("project","sp_code")) %>%
+  dplyr::rename(taxa_group = group)
 
 
 ##remove species name from each dataframe if taxonomicLevel  does not equal species then each site will be 'ready' for next step. 
 
+ com_ready <- com_dt3 %>%
+   dplyr::filter(taxonomicLevel == "species") %>%
+   dplyr::select(-taxonomicLevel) %>%
+   #arrange by project and site 
+   arrange(project, site) 
