@@ -26,7 +26,7 @@ rm(list = ls()); gc()
 
 ##### user input###
 
-run_species_check = "N" # "Y" indicate we need to run species check against ITIS "N" indicate we can skip the checking process
+run_species_check = "Y" # "Y" indicate we need to run species check against ITIS "N" indicate we can skip the checking process
 
 ###  Wrangling zooplankton species names and pull kingdom, phylum, class, order, family, and species names from ITIS
 # read in zooplankton dry weight data 
@@ -116,6 +116,8 @@ zoo_taxa_v2 <- zoo_taxa
 #Replace the string "NA" with actual NA values
 zoo_taxa_v2[zoo_taxa_v2 == "NA"] <- NA
 
+
+
 write.csv(x = zoo_taxa_v2, row.names = F, na = '',
           file = file.path("data", "02_community_processed_data","02_zoo_taxa_checked.csv"))
 } # close the species check 
@@ -126,8 +128,8 @@ zoo_taxa_checked<- read.csv(file = file.path("data", "02_community_processed_dat
 
 # Left join our current tidy dataframe with the table of taxonomic info
 zoo_taxa_ready <- left_join(zoo_dry_wts_d1, zoo_taxa_checked, by = "scientific_name") %>%
-     dplyr::select(-c('drymass_mg','drymass_source','additional.notes')) %>% #remove unnecessary columns
-     dplyr::rename(project=program) #rename scientific_name to sp_code to match community data column name
+     dplyr::select(-c('drymass_mg','drymass_source','additional.notes'))  #remove unnecessary columns
+     
 ##################### end taxa cleaning ###############
 
 #fill in remaining taxonomy columns where applicable. Can do manually using mutate and case_when - Shalanda 
@@ -151,14 +153,7 @@ com_dt2 <- com_dt %>%
                 species = str_to_sentence(species),
                 #change date from character to date and separate year, month, and day 
                 date = as.Date(date)
-                ##separate year, month and date into distinct columns; not necessary for now
-                # year = lubridate::year(date),
-                # month = lubridate::month(date), 
-                # day = lubridate::day(date)
                 ) 
-  # # bring columns related to the date behind the date column
-  # relocate(c(date,year,month,day), .before = site) 
-
 
 #### Arctic ###############
 
@@ -222,14 +217,6 @@ NorthLakes_den <- NorthLakes %>%
 com_dt3 <- rbind(Arctic_ready, Palmer_ready, NorthLakes_ready) %>%
   dplyr::select(-c(density)) %>% #remove original density column
 #add dry weight, diet_cat and scientific names and rename group column 
- dplyr::left_join(zoo_taxa_ready, by= c("project","sp_code")) %>%
-  dplyr::rename(taxa_group = group)
+ dplyr::left_join(zoo_taxa_ready, by= c("project","sp_code")) 
 
 
-##remove species name from each dataframe if taxonomicLevel  does not equal species then each site will be 'ready' for next step. 
-
- com_ready <- com_dt3 %>%
-   dplyr::filter(taxonomicLevel == "species") %>%
-   dplyr::select(-taxonomicLevel) %>%
-   #arrange by project and site 
-   arrange(project, site) 
