@@ -13,10 +13,10 @@
 #remaining questions/actions:
 # some species don't have matching name in ITIS, double check the "Scientific Name" column; If for sure there is no matching species in ITIS, should be hardcode the taxa info at the end of the zoo_taxa_v2 data frame
 # the taxa table has a species column, the same as scientific name; Right now, this code keep only the scientific name column; should we keep both columns?
-# We remove the phylum and family columns from the dry weight data since we will get that info from ITIS; is that ok?
-# change the name from group to taxa_group so we don't have to change the code everywhere
+# We remove the phylum and family columns from the dry weight data since we will get that info from ITIS; is that ok? -okay and DONE
+# change the name from group to taxa_group so we don't have to change the code everywhere - DONE
 # what if there are more other taxa got added, how do we update the taxa table? So far it looks like a mannual process? 
-# move the zoo_dry_wts data from the trait folder to the community folder. 
+# move the zoo_dry_wts data from the trait folder to the community folder. - DONE
 
 # Load libraries
 librarian::shelf(tidyverse, ltertools, stringr, taxize, purrr)
@@ -26,7 +26,7 @@ rm(list = ls()); gc()
 
 ##### user input###
 
-run_species_check = "Y" # "Y" indicate we need to run species check against ITIS "N" indicate we can skip the checking process
+run_species_check = "N" # "Y" indicate we need to run species check against ITIS "N" indicate we can skip the checking process
 
 ###  Wrangling zooplankton species names and pull kingdom, phylum, class, order, family, and species names from ITIS
 # read in zooplankton dry weight data 
@@ -39,7 +39,7 @@ zoo_dry_wts_d1 <- zoo_dry_wts %>%
   dplyr::mutate(scientific_name = stringr::str_replace(scientific_name, " sp.$| spp.$| sp$| spp. $", ""), 
 # Remove trailing spaces from 'text_column'
                 scientific_name = str_trim(scientific_name, side = "right")) %>%
-  dplyr::select(-species, -phylum,-family)
+  dplyr::select(-species_name_ori, -phylum,-family)
 
 #look for duplicates
 # peace <- zoo_dry_wts_d1 %>%
@@ -128,17 +128,55 @@ zoo_taxa_checked<- read.csv(file = file.path("data", "02_community_processed_dat
 
 # Left join our current tidy dataframe with the table of taxonomic info
 zoo_taxa_ready <- left_join(zoo_dry_wts_d1, zoo_taxa_checked, by = "scientific_name") %>%
-     dplyr::select(-c('drymass_mg','drymass_source','additional.notes'))  #remove unnecessary columns
+     dplyr::select(-c('drymass_mg','drymass_source','additional.notes')) %>%  #remove unnecessary columns
+     dplyr::mutate(kingdom = case_when(
+       scientific_name == "Copepod nauplii" & is.na(kingdom) ~ "Animalia",
+       scientific_name == "Copepodites" & is.na(kingdom) ~ "Animalia",
+       scientific_name == "Ctenophora" & is.na(kingdom) ~ "Animalia",
+       scientific_name == "Gammaridea" & is.na(kingdom) ~ "Animalia",
+       scientific_name == "Spongiobranchia" & is.na(kingdom) ~ "Animalia",
+       TRUE ~ kingdom # keep existing values for kingdom column & remaining NA values
+     ),
+     phylum = case_when(
+       scientific_name == "Copepod nauplii" & is.na(phylum) ~ "Arthropoda",
+       scientific_name == "Copepodites" & is.na(phylum) ~ "Arthropoda",
+       scientific_name == "Ctenophora" & is.na(phylum) ~ "Ctenophora", 
+       scientific_name == "Gammaridea" & is.na(phylum) ~ "Arthropoda",
+       scientific_name == "Spongiobranchia" & is.na(phylum) ~ "Mollusca", #WoRMS assignment 
+       TRUE ~ phylum # keep existing values for phylum column & remaining NA values 
+     ),
+     class = case_when(
+       scientific_name == "Copepod nauplii" & is.na(class) ~ "Copepoda",
+       scientific_name == "Copepodites" & is.na(class) ~ "Copepoda",
+       scientific_name == "Gammaridea" & is.na(class) ~ "Malacostraca",
+       scientific_name == "Spongiobranchia" & is.na(class) ~ "Gastropoda",
+       TRUE ~ class # keep existing values for class column & remaining NA values 
+     ),
+     order = case_when(
+       scientific_name == "Spongiobranchia" & is.na(order) ~ "Pteropoda",
+       TRUE ~ order # keep existing values for order column & remaining NA values
+     ),
+     family == case_when(
+       scientific_name == "Spongiobranchia" & is.na(family) ~ "Pneumodermatidae",
+       TRUE ~ family # keep existing values for family column & remaining NA values
+     ),
+     genus == case_when(
+       scientific_name == "Spongiobranchia" & is.na(genus) ~ "Spongiobranchia",
+       TRUE ~ genus #keep existing values for genus column & remaining NA values 
+     )
+     )
      
 ##################### end taxa cleaning ###############
 
-#fill in remaining taxonomy columns where applicable. Can do manually using mutate and case_when - Shalanda 
+
+
 
 
 #### community data ##############
 # read in harmonized data and start wrangling by project 
 
 com_dt<- read.csv(file = file.path("data", "02_community_processed_data", "02_consumer_harmonized.csv"))
+
 
 
 #### General Wrangling of Harmonized Community Data 
