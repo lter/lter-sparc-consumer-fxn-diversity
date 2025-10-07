@@ -23,7 +23,7 @@ rm(list = ls()); gc()
 ## --------------------------- ##
 
 # Read in the data key
-key <- read.csv(file = file.path("data", "00_keys","community_datakey.csv"))
+key <- read.csv(file = file.path("Data", "00_keys","community_datakey.csv"))
 
 # Check structure
 dplyr::glimpse(key)
@@ -38,7 +38,7 @@ dplyr::glimpse(key)
 # Harmonize Data ----
 ## --------------------------- ##
 # Read in all data (as a list)
-list_raw <- ltertools::read(raw_folder = file.path("data", "01_community_raw_data"), 
+list_raw <- ltertools::read(raw_folder = file.path("Data", "01_community_raw_data"), 
                             data_format = "csv")
 
 # # Check structure of one element
@@ -130,7 +130,7 @@ combo_file <- "02_consumer_harmonized.csv"
 
 # Export
 write.csv(x = combo_v99, row.names = F, na = '',
-          file = file.path("data", "02_community_processed_data",combo_file))
+          file = file.path("Data", "02_community_processed_data",combo_file))
 
 
 
