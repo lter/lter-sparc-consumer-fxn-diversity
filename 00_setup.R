@@ -16,7 +16,7 @@ rm(list = ls()); gc()
 ## --------------------------- ##
 
 
-local_root <- "data"  #local root folder
+local_root <- "Data"  #local root folder
 
 # List of folder names on Google Drive
 folders <- c(
