@@ -182,4 +182,4 @@ writexl::write_xlsx(trait_df2, '../../../../../../Downloads/atraiu-datakey-clean
 
 all_traits <- rbind(trait_df1, trait_df2)
 glimpse(all_traits)
-writexl::write_xlsx(trait_df2, '../../../../../../Downloads/mwhite-datakey-traits-clean.xlsx')
+writexl::write_xlsx(all_traits, '../../../../../../Downloads/mwhite-datakey-traits-clean.xlsx')
