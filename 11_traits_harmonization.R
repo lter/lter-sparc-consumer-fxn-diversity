@@ -157,6 +157,31 @@ trtlong_v4 <- dplyr::bind_rows(trtlong_v3_num_avg, trtlong_v3_char_concat) %>%
 # Check structure
 dplyr::glimpse(trtlong_v4)
 
+## --------------------------- ##
+# Combine Long & Wide Format Traits ----
+## --------------------------- ##
 
+# Now that originally wide and long format traits are both in wide format, we can combine
+trt_v2 <- dplyr::bind_rows(trt_v1, trtlong_v4)
+
+# Check structure
+dplyr::glimpse(trt_v2)
+
+## --------------------------- ##
+# Export ----
+## --------------------------- ##
+
+# Make a final object
+trt_v99 <- trt_v2
+
+# Check structure
+dplyr::glimpse(trt_v99)
+
+# Identify the file name & path
+trait_file <- "11_traits_harmonized.csv"
+trait_path <- file.path("data", "12_traits_processed_data", trait_file)
+
+# Export locally
+write.csv(x = trt_v99, na = '', row.names = F, file = trait_path)
 
 # End ----
