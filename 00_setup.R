@@ -15,7 +15,7 @@ rm(list = ls()); gc()
 ## --------------------------- ##
 
 # Create folders
-dir.create(path = file.path("data"), showWarnings = F)
+dir.create(path = file.path("Data"), showWarnings = F)
 
 # Create all subfolders of the 'data' folder
 purrr::walk(.x = c("00_keys",
