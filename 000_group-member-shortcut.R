@@ -57,7 +57,7 @@ purrr::walk2(.x = comm_files$id, .y = comm_files$name,
 trt_drive <- googledrive::as_id("https://drive.google.com/drive/folders/1UAq72kFD8Hh9uV1_He1ijJQ1m4lVg7eK")
 
 # List items in that folder
-(trt_files <- googledrive::drive_ls(path = trt_drive))
+(trt_files <- googledrive::drive_ls(path = trt_drive, pattern = ".csv"))
 
 # Download them to the relevant local folder
 purrr::walk2(.x = trt_files$id, .y = trt_files$name,
