@@ -18,11 +18,11 @@ rm(list = ls()); gc()
 dir.create(path = file.path("data"), showWarnings = F)
 
 # Create all subfolders of the 'data' folder
-purrr::walk(.x = c("01_community_raw_data",
+purrr::walk(.x = c("00_keys",
+                   "01_community_raw_data",
                    "02_community_processed_data",
                    "11_traits_raw_data",
-                   "12_traits_processed_data",
-                   "00_keys"),
+                   "12_traits_processed_data"),
             .f = ~ dir.create(path = file.path("data", .x),
                               showWarnings = F))
 
