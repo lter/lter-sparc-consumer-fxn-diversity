@@ -18,7 +18,7 @@ rm(list = ls()); gc()
 ## --------------------------- ##
 
 # Read in the harmonized trait data
-trt_v1 <- read.csv(file.path("data", "12_traits_processed_data", "11_traits_harmonized.csv"))
+trt_v1 <- read.csv(file.path("Data", "12_traits_processed_data", "11_traits_harmonized.csv"))
 
 # Check structure
 dplyr::glimpse(trt_v1)
@@ -116,7 +116,7 @@ dplyr::glimpse(trt_v99)
 
 # Identify the file name & path
 trait_file <- "12_traits_wrangled.csv"
-trait_path <- file.path("data", "12_traits_processed_data", trait_file)
+trait_path <- file.path("Data", "12_traits_processed_data", trait_file)
 
 # Export locally
 write.csv(x = trt_v99, na = '', row.names = F, file = trait_path)

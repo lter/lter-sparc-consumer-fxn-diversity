@@ -24,7 +24,7 @@ purrr::walk(.x = c("00_keys",
                    "11_traits_raw_data",
                    "12_traits_processed_data",
                    "21_environmental_raw_data"),
-            .f = ~ dir.create(path = file.path("data", .x),
+            .f = ~ dir.create(path = file.path("Data", .x),
                               showWarnings = F))
 
 # End ----
