@@ -64,9 +64,7 @@ sort(unique(trtlong_v1$trait_name))
 # Do needed tidying
 trtlong_v2 <- trtlong_v1 %>% 
   # Pare down to only traits of interest
-  dplyr::filter(trait_name %in% c("CTmax", "CTmin", "Tmerge", "Tpref", 
-                                  "Tforage_max", "Tforage_min", "Mass", 
-                                  "Activity", "Tbask", "wetWeight", 
+  dplyr::filter(trait_name %in% c("Mass", "Activity", "wetWeight", 
                                   "bodyLengthMax", "reproductionMode", 
                                   "clutchSize", "eggWeight", "trophicGroup")) %>% 
   # Standardize trait names
