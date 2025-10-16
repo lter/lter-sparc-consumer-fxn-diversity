@@ -39,7 +39,8 @@ zoo_dry_wts_d1 <- zoo_dry_wts %>%
   dplyr::mutate(scientific_name = stringr::str_replace(scientific_name, " sp.$| spp.$| sp$| spp. $", ""), 
 # Remove trailing spaces from 'text_column'
                 scientific_name = str_trim(scientific_name, side = "right")) %>%
-  dplyr::select(-species_name_ori, -phylum,-family)
+  dplyr::select(-species_name_ori, -phylum,-family) %>%
+  dplyr::mutate_if(is.character, str_trim, side = "right")
 
 #look for duplicates
 # peace <- zoo_dry_wts_d1 %>%
@@ -191,7 +192,8 @@ com_dt2 <- com_dt %>%
                 species = str_to_sentence(species),
                 #change date from character to date and separate year, month, and day 
                 date = as.Date(date)
-                ) 
+                ) %>%
+  dplyr::mutate_if(is.character, str_trim, side = "right")
 
 #### Arctic ###############
 
