@@ -1,10 +1,3 @@
-#----------------------------------##
-# SPARC - Consumer Functional Diversity (CFD) 
-###--------------------------------##
-
-# Script author(s): Shalanda Grier, Li Kui, Nick Lyons
-# Sites: Palmer LTER, Arctic LTER, North Lakes LTER, Reef Life Survey (Australia sites)
-
 ## ---------------------------------------------------- ##
 # CFD - Step 1: Harmonization for community data
 ## ---------------------------------------------------- ##
@@ -14,16 +7,18 @@
 # Load libraries
 librarian::shelf(tidyverse, ltertools)
 
+# Get set up
+source("00_setup.R")
+
 # Clear environment & collect garbage
 rm(list = ls()); gc()
 
-
 ## --------------------------- ##
-# Read in Key
+# Read in Key ----
 ## --------------------------- ##
 
 # Read in the data key
-key <- read.csv(file = file.path("data", "00_keys","community_datakey.csv"))
+key <- read.csv(file = file.path("data", "-keys", "community_datakey.csv"))
 
 # Check structure
 dplyr::glimpse(key)
@@ -38,7 +33,7 @@ dplyr::glimpse(key)
 # Harmonize Data ----
 ## --------------------------- ##
 # Read in all data (as a list)
-list_raw <- ltertools::read(raw_folder = file.path("data", "01_community_raw_data"), 
+list_raw <- ltertools::read(raw_folder = file.path("data", "community_raw-data"), 
                             data_format = "csv")
 
 # # Check structure of one element
@@ -126,29 +121,10 @@ combo_v99 <- combo_v2
 dplyr::glimpse(combo_v99)
 
 # Make a filename for it
-combo_file <- "02_consumer_harmonized.csv"
+combo_file <- "01_community_harmonized.csv"
 
 # Export
 write.csv(x = combo_v99, row.names = F, na = '',
-          file = file.path("data", "02_community_processed_data",combo_file))
+          file = file.path("data", "community_tidy-data", combo_file))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# End ----

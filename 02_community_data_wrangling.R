@@ -21,6 +21,9 @@
 # Load libraries
 librarian::shelf(tidyverse, ltertools, stringr, taxize, purrr)
 
+# Get set up
+source("00_setup.R")
+
 # Clear environment & collect garbage
 rm(list = ls()); gc()
 
@@ -30,7 +33,7 @@ run_species_check = "N" # "Y" indicate we need to run species check against ITIS
 
 ###  Wrangling zooplankton species names and pull kingdom, phylum, class, order, family, and species names from ITIS
 # read in zooplankton dry weight data 
-zoo_dry_wts <- read.csv(file=file.path('data', "01_community_raw_data", "Zooplankton_dry_ind_wt.csv"),na.strings=c("NA","NA ",""))
+zoo_dry_wts <- read.csv(file=file.path('Data', "community_raw-data", "Zooplankton_dry_ind_wt.csv"),na.strings=c("NA","NA ",""))
 
 
 #remove instances of 'sp.',  'spp.' , 'sp'  , 'spp. '; the scientific names and the "species" column is the same. 
@@ -120,11 +123,11 @@ zoo_taxa_v2[zoo_taxa_v2 == "NA"] <- NA
 
 
 write.csv(x = zoo_taxa_v2, row.names = F, na = '',
-          file = file.path("data", "02_community_processed_data","02_zoo_taxa_checked.csv"))
+          file = file.path("Data", "community_tidy-data","02_zoo_taxa_checked.csv"))
 } # close the species check 
 
 # if no need to check the taxa information, we can read the file directly
-zoo_taxa_checked<- read.csv(file = file.path("data", "02_community_processed_data", "02_zoo_taxa_checked.csv"),na="")
+zoo_taxa_checked<- read.csv(file = file.path("Data", "community_tidy-data", "02_zoo_taxa_checked.csv"),na="")
 
 
 # Left join our current tidy dataframe with the table of taxonomic info
@@ -176,7 +179,7 @@ zoo_taxa_ready <- left_join(zoo_dry_wts_d1, zoo_taxa_checked, by = "scientific_n
 #### community data ##############
 # read in harmonized data and start wrangling by project 
 
-com_dt<- read.csv(file = file.path("data", "02_community_processed_data", "02_consumer_harmonized.csv"))
+com_dt<- read.csv(file = file.path("Data", "community_tidy-data", "01_community_harmonized.csv"))
 
 
 
@@ -259,4 +262,22 @@ com_dt3 <- rbind(Arctic_ready, Palmer_ready, NorthLakes_ready) %>%
 #add dry weight, diet_cat and scientific names and rename group column 
  dplyr::left_join(zoo_taxa_ready, by= c("project","sp_code")) 
 
-
+ 
+ ## --------------------------- ##
+ # Export ----
+ ## --------------------------- ##
+ 
+ # Make one last version of the data
+ com_v99 <- com_dt3
+ 
+ # Check structure
+ dplyr::glimpse(com_v99)
+ 
+ # Identify the file name & path
+ comm_file <- "02_community_wrangled.csv"
+ comm_path <- file.path("Data", "community_tidy-data", comm_file)
+ 
+ # Export locally
+ write.csv(x = com_dt3, na = '', row.names = F, file = comm_path)
+ 
+ # End ----
