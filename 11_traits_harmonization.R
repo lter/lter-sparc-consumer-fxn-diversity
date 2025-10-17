@@ -18,7 +18,7 @@ rm(list = ls()); gc()
 ## --------------------------- ##
 
 # Read in 'regular' trait key
-trt_key_v0 <- read.csv(file = file.path("data", "00_keys", "traits_datakey.csv"))
+trt_key_v0 <- read.csv(file = file.path("Data", "-keys", "traits_datakey.csv"))
 
 # Make sure it's all pared down to the needed content
 trt_key <- ltertools::check_key(key = trt_key_v0)
@@ -27,7 +27,7 @@ trt_key <- ltertools::check_key(key = trt_key_v0)
 dplyr::glimpse(trt_key)
 
 # Also read in the key for long-format traits
-trtlong_key_v0 <- read.csv(file = file.path("Data", "00_keys", "long_traits_datakey.csv"))
+trtlong_key_v0 <- read.csv(file = file.path("Data", "-keys", "long_traits_datakey.csv"))
 trtlong_key <- ltertools::check_key(key = trtlong_key_v0 )
 
 # Check structure
@@ -39,14 +39,14 @@ dplyr::glimpse(trtlong_key)
 
 # Harmonize the 'regular' trait data
 trt_v1 <- ltertools::harmonize(key = trt_key, data_format = "csv",
-                               raw_folder = file.path("Data", "11_traits_raw_data"))
+                               raw_folder = file.path("Data", "traits_raw-data"))
 
 # Check structure
 dplyr::glimpse(trt_v1)
 
 # Do the same for the long-format traits
 trtlong_v1 <- ltertools::harmonize(key = trtlong_key, data_format = "csv",
-                               raw_folder = file.path("Data", "11_traits_raw_data"))
+                               raw_folder = file.path("Data", "traits_raw-data"))
 
 # Check structure
 dplyr::glimpse(trtlong_v1)
@@ -177,7 +177,7 @@ dplyr::glimpse(trt_v99)
 
 # Identify the file name & path
 trait_file <- "11_traits_harmonized.csv"
-trait_path <- file.path("Data", "12_traits_processed_data", trait_file)
+trait_path <- file.path("Data", "traits_tidy-data", trait_file)
 
 # Export locally
 write.csv(x = trt_v99, na = '', row.names = F, file = trait_path)
