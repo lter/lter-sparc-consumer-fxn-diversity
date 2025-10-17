@@ -12,24 +12,24 @@
 # Load libraries
 librarian::shelf(tidyverse, googledrive)
 
-# Clear environment & collect garbage
-rm(list = ls()); gc()
-
 # Create needed folders
 source("00_setup.R")
+
+# Clear environment & collect garbage
+rm(list = ls()); gc()
 
 ## --------------------------- ##
 # Upload Community Data ----
 ## --------------------------- ##
 
 # List local file path to relevant folder
-comm_path <- file.path("Data", "02_community_processed_data")
+comm_path <- file.path("Data", "community_tidy-data")
 
 # List local files in that folder
 (comm_files <- dir(path = comm_path, pattern = "*.csv"))
 
 # Identify the destination Drive folder
-comm_drive <- googledrive::as_id("https://drive.google.com/drive/folders/1LE1Rr1Hfa1uZPvZoUIr1t18khnsnbeFV")
+comm_drive <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1LE1Rr1Hfa1uZPvZoUIr1t18khnsnbeFV")
 
 # Upload all the files to the Drive (overwriting what's there if there is one already)
 purrr::walk(.x = comm_files,
@@ -41,13 +41,13 @@ purrr::walk(.x = comm_files,
 ## --------------------------- ##
 
 # List local file path to relevant folder
-trt_path <- file.path("Data", "12_traits_processed_data")
+trt_path <- file.path("Data", "traits_tidy-data")
 
 # List local files in that folder
 (trt_files <- dir(path = trt_path, pattern = "*.csv"))
 
 # Identify the destination Drive folder
-trt_drive <- googledrive::as_id("https://drive.google.com/drive/folders/1KPv27jTBIwGwuHNU3-EyWlubN9xXjIDt")
+trt_drive <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1KPv27jTBIwGwuHNU3-EyWlubN9xXjIDt")
 
 # Upload all the files to the Drive (overwriting what's there if there is one already)
 purrr::walk(.x = trt_files,
