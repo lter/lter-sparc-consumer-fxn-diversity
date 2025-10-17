@@ -17,14 +17,19 @@ rm(list = ls()); gc()
 # Create folders
 dir.create(path = file.path("Data"), showWarnings = F)
 
-# Create all subfolders of the 'data' folder
-purrr::walk(.x = c("00_keys",
-                   "01_community_raw_data",
-                   "02_community_processed_data",
-                   "11_traits_raw_data",
-                   "12_traits_processed_data",
-                   "21_environmental_raw_data"),
+# Identify all data types
+data_types <- c("community", "traits", "environmental", "species")
+
+# Create 'raw' and 'tidy' subfolders of "Data/" for each data type
+purrr::walk(.x = paste0(data_types, sort(rep(c("_raw-data", "_tidy-data"), 
+                                               times = length(data_types)))),
             .f = ~ dir.create(path = file.path("Data", .x),
-                              showWarnings = F))
+                              showWarnings = F, recursive = T))
+
+# Make a folder for the data keys as well
+dir.create(path = file.path("Data", "-keys"), showWarnings = F)
+
+# Clear environment & collect garbage
+rm(list = ls()); gc()
 
 # End ----

@@ -32,7 +32,7 @@ key_drive <- googledrive::as_id("https://drive.google.com/drive/folders/1of2tKXc
 # Download them to the relevant local folder
 purrr::walk2(.x = key_files$id, .y = key_files$name,
              .f = ~ googledrive::drive_download(file = .x, overwrite = T, type = "csv",
-                                                path = file.path("Data", "00_keys", .y)))
+                                                path = file.path("Data", "-keys", .y)))
 
 ## --------------------------- ##
 # Download Raw Community Data ----
@@ -47,7 +47,7 @@ comm_drive <- googledrive::as_id("https://drive.google.com/drive/folders/1n6iqs3
 # Download them to the relevant local folder
 purrr::walk2(.x = comm_files$id, .y = comm_files$name,
              .f = ~ googledrive::drive_download(file = .x, overwrite = T, type = "csv",
-                                                path = file.path("Data", "01_community_raw_data", .y)))
+                                                path = file.path("Data", "community_raw-data", .y)))
 
 ## --------------------------- ##
 # Download Raw Trait Data ----
@@ -62,7 +62,7 @@ trt_drive <- googledrive::as_id("https://drive.google.com/drive/folders/1UAq72kF
 # Download them to the relevant local folder
 purrr::walk2(.x = trt_files$id, .y = trt_files$name,
              .f = ~ googledrive::drive_download(file = .x, overwrite = T, type = "csv",
-                                                path = file.path("Data", "11_traits_raw_data", .y)))
+                                                path = file.path("Data", "traits_raw-data", .y)))
 
 ## --------------------------- ##
 # Download Environmental Data ----
@@ -77,6 +77,6 @@ env_drive <- googledrive::as_id("https://drive.google.com/drive/folders/1yUg4tYF
 # Download them to the relevant local folder
 purrr::walk2(.x = env_files$id, .y = env_files$name,
              .f = ~ googledrive::drive_download(file = .x, overwrite = T, type = "csv",
-                                                path = file.path("Data", "21_environmental_raw_data", .y)))
+                                                path = file.path("Data", "environmental_raw-data", .y)))
 
 # End ----
