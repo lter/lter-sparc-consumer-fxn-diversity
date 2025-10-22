@@ -13,11 +13,11 @@
 # Load libraries
 librarian::shelf(tidyverse, googledrive)
 
-# Clear environment & collect garbage
-rm(list = ls()); gc()
-
 # Create needed folders
 source("00_setup.R")
+
+# Clear environment & collect garbage
+rm(list = ls()); gc()
 
 ## --------------------------- ##
 # Download Keys ----
@@ -34,6 +34,9 @@ purrr::walk2(.x = key_files$id, .y = key_files$name,
              .f = ~ googledrive::drive_download(file = .x, overwrite = T, type = "csv",
                                                 path = file.path("Data", "-keys", .y)))
 
+# Clear environment & collect garbage
+rm(list = ls()); gc()
+
 ## --------------------------- ##
 # Download Raw Community Data ----
 ## --------------------------- ##
@@ -49,6 +52,9 @@ purrr::walk2(.x = comm_files$id, .y = comm_files$name,
              .f = ~ googledrive::drive_download(file = .x, overwrite = T, type = "csv",
                                                 path = file.path("Data", "community_raw-data", .y)))
 
+# Clear environment & collect garbage
+rm(list = ls()); gc()
+                                                
 ## --------------------------- ##
 # Download Raw Trait Data ----
 ## --------------------------- ##
@@ -64,6 +70,9 @@ purrr::walk2(.x = trt_files$id, .y = trt_files$name,
              .f = ~ googledrive::drive_download(file = .x, overwrite = T, type = "csv",
                                                 path = file.path("Data", "traits_raw-data", .y)))
 
+# Clear environment & collect garbage
+rm(list = ls()); gc()
+
 ## --------------------------- ##
 # Download Environmental Data ----
 ## --------------------------- ##
@@ -78,5 +87,8 @@ env_drive <- googledrive::as_id("https://drive.google.com/drive/folders/1yUg4tYF
 purrr::walk2(.x = env_files$id, .y = env_files$name,
              .f = ~ googledrive::drive_download(file = .x, overwrite = T, type = "csv",
                                                 path = file.path("Data", "environmental_raw-data", .y)))
+
+# Clear environment & collect garbage
+rm(list = ls()); gc()
 
 # End ----
