@@ -70,24 +70,16 @@ trtlong_v2 <- trtlong_v1 %>%
   # Standardize trait names
   dplyr::mutate(trait_std = dplyr::case_when(
     ## Reproductive traits
-    trait_name %in% c("clutchSize") ~ "reproductive.rate",
-    trait_name %in% c("reproductionMode") ~ "reproduction.mode",
-    ## Temperature traits
-    trait_name %in% c("CTmax") ~ "ct.temperature.max",
-    trait_name %in% c("CTmin") ~ "ct.temperature.min",
-    trait_name %in% c("Tmerge") ~ "temperature.merge",
-    trait_name %in% c("Tpref") ~ "temperature.preference",
-    trait_name %in% c("Tbask") ~ "temperature.bask",
-    trait_name %in% c("Tforage_max") ~ "temperature.forage.max",
-    trait_name %in% c("Tforage_min") ~ "temperature.forage.min",
+    trait_name %in% c("clutchSize") ~ "reproduction_reproductive.rate",
+    trait_name %in% c("reproductionMode") ~ "reproduction_reproductive.mode_ordinal",
     ## Size traits
-    trait_name %in% c("Mass") ~ "mass",
-    trait_name %in% c("wetWeight") ~ "weight.wet",
-    trait_name %in% c("eggWeight") ~ "weight.egg",
-    trait_name %in% c("bodyLengthMax") ~ "length.body.max",
+    trait_name %in% c("Mass") ~ "mass_adult",
+    trait_name %in% c("wetWeight") ~ "weight_adult.wet",
+    trait_name %in% c("eggWeight") ~ "weight_egg",
+    trait_name %in% c("bodyLengthMax") ~ "length_adult.max",
     ## Others
-    trait_name %in% c("Activity") ~ "activity.time",
-    trait_name %in% c("trophicGroup") ~ "trophic.level.category",
+    trait_name %in% c("Activity") ~ "active.time_category_ordinal",
+    trait_name %in% c("trophicGroup") ~ "diet_trophic.level_ordinal",
     ## If not standardized, add a flag
     T ~ "NOT FIXED"))
 
@@ -107,7 +99,7 @@ sort(unique(trtlong_v2$trait_unit))
 trtlong_v3 <- trtlong_v2 %>% 
   # Tidy up units (if necessary)
   dplyr::mutate(trait_unit = dplyr::case_when(
-    trait_unit == "eggs clutch^-1" ~ "num.eggs.per.clutch",
+    trait_unit == "eggs clutch^-1" ~ "num.offspring.per.clutch",
     T ~ trait_unit))
 
 # Check structure
@@ -164,6 +156,9 @@ trt_v2 <- dplyr::bind_rows(trt_v1, trtlong_v4)
 
 # Check structure
 dplyr::glimpse(trt_v2)
+
+# Are harmonized columns formatted in a standard way?
+sort(names(trt_v2))
 
 ## --------------------------- ##
 # Export ----
