@@ -46,7 +46,7 @@ dplyr::glimpse(trt_v1)
 
 # Do the same for the long-format traits
 trtlong_v1 <- ltertools::harmonize(key = trtlong_key, data_format = "csv",
-                               raw_folder = file.path("Data", "traits_raw-data"))
+                                   raw_folder = file.path("Data", "traits_raw-data"))
 
 # Check structure
 dplyr::glimpse(trtlong_v1)
@@ -70,7 +70,7 @@ trtlong_v2 <- trtlong_v1 %>%
   # Standardize trait names
   dplyr::mutate(trait_std = dplyr::case_when(
     ## Reproductive traits
-    trait_name %in% c("clutchSize") ~ "reproductive.rate.num",
+    trait_name %in% c("clutchSize") ~ "reproductive.rate",
     trait_name %in% c("reproductionMode") ~ "reproduction.mode",
     ## Temperature traits
     trait_name %in% c("CTmax") ~ "ct.temperature.max",
@@ -107,7 +107,7 @@ sort(unique(trtlong_v2$trait_unit))
 trtlong_v3 <- trtlong_v2 %>% 
   # Tidy up units (if necessary)
   dplyr::mutate(trait_unit = dplyr::case_when(
-    trait_unit == "eggs clutch^-1" ~ "eggs.per.clutch",
+    trait_unit == "eggs clutch^-1" ~ "num.eggs.per.clutch",
     T ~ trait_unit))
 
 # Check structure
