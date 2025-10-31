@@ -340,7 +340,7 @@ com_dt4 <- com_dt3[,-31] #remove boolean column
  
  FISHGLOB<- com_dt %>%
    dplyr::filter(!project %in% c("Arctic", "NorthLakes", "RLS", "Palmer")) #metadata did not transfer over during harmonization
- #once script is fixed for harmonization can use following code
+ #once script is fixed for harmonization can use code below
  #dplyr::filter(project == "FISHGLOB)
  
  FISHGLOB_dm_coeff <- left_join(FISHGLOB, dm_coeff, by = "class")
@@ -367,7 +367,7 @@ com_dt4 <- com_dt3[,-31] #remove boolean column
  #add diet_cat information 
  
  RLS_and_BottomTrawl_Fish_dietcat <- read_csv("~/Documents/RLS_and_BottomTrawl_Fish_dietcat.csv")
- #data not showing up in data folder on computer but when it does can replace code with 
+ #data not showing up in data folder on computer but when it does can replace above code with 
  #read.csv(file=file.path('Data', "community_raw-data", "RLS_and_BottomTrawl_Fish_dietcat.csv"),na.strings=c("NA","NA ",""))
  
  diet_cat_1 <- RLS_and_BottomTrawl_Fish_dietcat[,-c(1,3:6)]
@@ -378,8 +378,7 @@ com_dt4 <- com_dt3[,-31] #remove boolean column
  
  
 ###combine consumer data 
-
-#check differences in column names and check column names to prepare to combine all data 
+#check differences in column names and check column names to prepare to combine all consumer data 
 #setdiff(names(com_dt4), names(fish_com_dt2))
 
 
@@ -390,7 +389,7 @@ fish_com_ready <- fish_com_dt2 %>%
   dplyr::mutate(taxonomicLevel = NA) %>%
   dplyr::select(-c(dm_coeff))
  
-zoo_com_ready<- com_dt4 %>% #add new column names so each dataframe matches. can delete later 
+zoo_com_ready<- com_dt4 %>% #add new column names so each dataframes matches. can delete later 
   dplyr::mutate(length_cm = NA,
                 biomass_kg = NA,
                 taxonomicLevel = NA,
