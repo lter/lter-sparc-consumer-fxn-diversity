@@ -3,7 +3,7 @@
 ###--------------------------------##
 
 # Script author(s): Shalanda Grier, Li Kui, Nick Lyons
-# Sites: Palmer LTER, Arctic LTER, North Lakes LTER
+# Sites: Palmer LTER, Arctic LTER, North Lakes LTER, North Sea, English Channel
 
 
 #Purpose
@@ -26,6 +26,8 @@ source("00_setup.R")
 
 # Clear environment & collect garbage
 rm(list = ls()); gc()
+
+#options(scipen = 999)
 
 ##### user input###
 
@@ -201,7 +203,8 @@ com_dt2 <- com_dt %>%
 #### Arctic ###############
 
 Arctic  <-com_dt2 %>% 
-  dplyr::filter(project == "Arctic")
+  dplyr::filter(project == "Arctic")%>%
+  dplyr::select(-class) #drop class only need for RLS 
 
 
 #convert density from num/l to num/m3 
@@ -218,7 +221,8 @@ Arctic_ready <- Arctic_den
 #########Palmer LTER 
 
 Palmer <-com_dt2 %>%
-  dplyr::filter(project == "Palmer ")
+  dplyr::filter(project == "Palmer") %>%
+  dplyr::select(-class) #drop class
 
 #convert density from 1000m3 to 1m3. 
 #add temp data. SST retrieved from Palmer LTER weather station. 
@@ -229,7 +233,9 @@ Palmer_den <- Palmer %>%
   dplyr::mutate(`density_num/m3` = density/1000,
                  temp_c = "-0.4598606") %>%
   mutate(sp_code = species) %>%
-  dplyr::select(-species) # remove the species column here so it doesn't conflict with the taxa join later.
+  dplyr::filter(!density == -1) %>% #remove all rows where species identified but not quantified
+  dplyr::select(-species)# remove the species column here so it doesn't conflict with the taxa join later.
+
 
 Palmer_ready <- Palmer_den
 ######### end ################
@@ -237,7 +243,8 @@ Palmer_ready <- Palmer_den
 ###### North Lakes LTER 
 
 NorthLakes <- com_dt2 %>% 
-  dplyr::filter(project == "NorthLakes")
+  dplyr::filter(project == "NorthLakes") %>%
+  dplyr::select(-class) #drop class
 
 #convert density from m2 to m3. Divide density by tow_depth per EDI 
 #add temperature data for Southern Lakes  <https://lter.limnology.wisc.edu/core-study-lakes/>
@@ -255,13 +262,14 @@ NorthLakes_den <- NorthLakes %>%
 
 ###################### North Lakes end  ##########################################
 
-#### Combine all sites back together and add dry weight, diet_cat and scientific names
+#### Combine all sites (zooplankton) back together and add dry weight, diet_cat and scientific names
  
 com_dt3 <- rbind(Arctic_ready, Palmer_ready, NorthLakes_ready) %>%
   dplyr::select(-c(density)) %>% #remove original density column
 #add dry weight, diet_cat and scientific names and rename group column 
  dplyr::left_join(zoo_taxa_ready, by= c("project","sp_code")) 
 
+ 
  
  ## --------------------------- ##
  # Export ----
@@ -281,3 +289,92 @@ com_dt3 <- rbind(Arctic_ready, Palmer_ready, NorthLakes_ready) %>%
  write.csv(x = com_dt3, na = '', row.names = F, file = comm_path)
  
  # End ----
+
+ 
+#move up to line 268 and then combine all data 
+########################Reef Life Survey Australian Sites #############################
+ 
+RLS <- com_dt %>%
+   dplyr::filter(project == "RLS")
+ 
+# call in dry weight conversions
+dm_conversion <- read.csv("~/Downloads/ dm_conversions_cndwg.csv") #fix later to pull from community folder not in folder presently?
+
+#obtain individual biomass 
+#subsite_level2 = method
+#subsite_level3 = block
+#for each block for method 1 a total of 250m2 surveyed 
+#for each block for method 2 a total of 50m2 surveyed 
+#there are two blocks for each method 
+
+RLS_ind_bio <- RLS %>%
+  dplyr::mutate(ind_bio = biomass_g/count_num) %>%
+  dplyr::mutate(transectarea_m2 = case_when(
+    subsite_level2 == 1 ~ 250,
+    subsite_level2 == 2 ~ 50
+  ))
+
+
+##call in dry mass coeffeciet conversion data 
+
+dm_filter <- dm_conversion %>%
+  dplyr::filter(kingdom == "Animalia",
+                dm_wm_mean < 1)
+
+dm_coeff <- dm_filter %>% 
+  dplyr::group_by(class)%>%
+  dplyr::summarise(dm_coeff= mean(as.numeric(dm_wm_mean), 
+                                  na.rm=TRUE), .groups = "drop")%>%
+  dplyr::ungroup()
+ 
+#join dm_coeff with RLS survey data 
+
+RLS_dm_coeff_data <- left_join(RLS_ind_bio, dm_coeff, by = "class")
+
+
+RLS_den_dm <- RLS_dm_coeff_data %>%
+  dplyr::mutate(`dmperind_g/ind` = ind_bio *dm_coeff, 
+                `density_num/m2` = count_num/transectarea_m2, 
+                temp_c= case_when(
+                  site %in% "Jervis Bay" ~ 22.3,# assign temperature 
+                  site %in% "Maria Island" ~ 17,
+                  site %in% "Ninepin Point" ~17
+                )
+  ) 
+
+RLS_ready <- RLS_den_dm %>%
+  dplyr::select(-transectarea_m2)
+
+############ end #################
+
+
+#############FISHGLOB Bottom trawl survey data North Sea and English Channel ######################  
+
+FISHGLOB<- com_dt %>%
+  dplyr::filter(!project %in% c("Arctic", "NorthLakes", "RLS", "Palmer")) #metadata did not transfer over during harmonization
+
+#once script is fixed for harmonization can use following code
+ #dplyr::filter(project == "FISHGLOB)
+
+FISHGLOB_dm_coeff <- left_join(FISHGLOB, dm_coeff, by = "class")
+
+FISHGLOB_ind_bio <- FISHGLOB_dm_coeff %>%
+dplyr::mutate(biomass_g = biomass_kg*1000, #convert wet mass from kg to g
+               ind_bio = biomass_g/count_num, #calculate biomass per individual 
+               `dmperind_g/ind` = ind_bio * dm_coeff, #calculate dry mass per individual in g
+               `density_num/m2` = `density_num_km2` /1000000, #convert density from km2 to m2 
+               temp_c = case_when(
+                    site %in% "FR-CGFS" ~ 17, #add temp data for North Sea
+                    site %in% "NS-IBTS" ~ 16) #add temp data for English Channel 
+)
+
+FISHGLOB_ready <-FISHGLOB_ind_bio
+
+##############  end #############
+
+
+#combine fish data and add diet_cat information 
+
+fish_com_dt1 <- rbind(RLS_ready, FISHGLOB_ready)
+
+ 
