@@ -42,11 +42,15 @@ list_raw <- ltertools::read(raw_folder = file.path("data", "community_raw-data")
 # Make a list to store standardized outputs
 list_std <- list()
 
+# list the name of all datasets
+namelist <- sort(intersect(x = key$source, y = names(list_raw)))
+
 # Now, let's loop across datasets in the key
-for(focal_src in sort(intersect(x = key$source, y = names(list_raw)))){
+for (focal_src in sort(intersect(x = key$source, y = names(list_raw)))){
   
   # Progress message
   message("Standarizing file: '", focal_src, "'")
+  
   
   # Standardize this file
   focal_v1 <- ltertools::standardize(focal_file = focal_src, 

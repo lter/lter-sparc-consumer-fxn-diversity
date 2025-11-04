@@ -31,7 +31,7 @@ rm(list = ls()); gc()
 
 ##### user input###
 
-run_species_check = "N" # "Y" indicate we need to run species check against ITIS "N" indicate we can skip the checking process
+run_species_check = "Y" # "Y" indicate we need to run species check against ITIS "N" indicate we can skip the checking process
 
 ###  Wrangling zooplankton species names and pull kingdom, phylum, class, order, family, and species names from ITIS
 # read in zooplankton dry weight data 
@@ -162,11 +162,11 @@ zoo_taxa_ready <- left_join(zoo_dry_wts_d1, zoo_taxa_checked, by = "scientific_n
        scientific_name == "Spongiobranchia" & is.na(order) ~ "Pteropoda",
        TRUE ~ order # keep existing values for order column & remaining NA values
      ),
-     family == case_when(
+     family = case_when(
        scientific_name == "Spongiobranchia" & is.na(family) ~ "Pneumodermatidae",
        TRUE ~ family # keep existing values for family column & remaining NA values
      ),
-     genus == case_when(
+     genus = case_when(
        scientific_name == "Spongiobranchia" & is.na(genus) ~ "Spongiobranchia",
        TRUE ~ genus #keep existing values for genus column & remaining NA values 
      )
@@ -284,7 +284,7 @@ com_dt4 <- com_dt3[,-31] #remove boolean column
    dplyr::filter(project == "RLS")
  
  # call in dry weight conversions
- dm_conversion <- read.csv("~/Downloads/ dm_conversions_cndwg.csv") #fix later to pull from community folder not in folder presently?
+ dm_conversion <- read.csv(file.path('Data', "community_raw-data", "dm_conversions_cndwg.csv")) #fix later to pull from community folder not in folder presently?
  #read.csv(file=file.path('Data', "community_raw-data", "dm_conversions_cndwg.csv"),na.strings=c("NA","NA ",""))
  
  
@@ -306,8 +306,7 @@ com_dt4 <- com_dt3[,-31] #remove boolean column
  ##call in dry mass coeffeciet conversion data 
  
  dm_filter <- dm_conversion %>%
-   dplyr::filter(kingdom == "Animalia",
-                 dm_wm_mean < 1)
+   dplyr::filter(kingdom == "Animalia"&dm_wm_mean < 1)
  
  dm_coeff <- dm_filter %>% 
    dplyr::group_by(class)%>%
@@ -339,9 +338,10 @@ com_dt4 <- com_dt3[,-31] #remove boolean column
  #############FISHGLOB Bottom trawl survey data North Sea and English Channel ######################  
  
  FISHGLOB<- com_dt %>%
-   dplyr::filter(!project %in% c("Arctic", "NorthLakes", "RLS", "Palmer")) #metadata did not transfer over during harmonization
- #once script is fixed for harmonization can use code below
- #dplyr::filter(project == "FISHGLOB)
+   dplyr::filter(project == "FISHGLOB")
+  
+ #dplyr::filter(!project %in% c("Arctic", "NorthLakes", "RLS", "Palmer")) # before fixing the issue with FISHGLOB data, metadata did not transfer over during harmonization
+
  
  FISHGLOB_dm_coeff <- left_join(FISHGLOB, dm_coeff, by = "class")
  
@@ -366,11 +366,12 @@ com_dt4 <- com_dt3[,-31] #remove boolean column
  
  #add diet_cat information 
  
- RLS_and_BottomTrawl_Fish_dietcat <- read_csv("~/Documents/RLS_and_BottomTrawl_Fish_dietcat.csv")
+ #RLS_and_BottomTrawl_Fish_dietcat <- read_csv("~/Documents/RLS_and_BottomTrawl_Fish_dietcat.csv")
  #data not showing up in data folder on computer but when it does can replace above code with 
- #read.csv(file=file.path('Data', "community_raw-data", "RLS_and_BottomTrawl_Fish_dietcat.csv"),na.strings=c("NA","NA ",""))
+ RLS_and_BottomTrawl_Fish_dietcat <-read.csv(file=file.path('Data', "community_raw-data", "RLS_and_BottomTrawl_Fish_dietcat.csv"),na.strings=c("NA","NA ",""))
  
- diet_cat_1 <- RLS_and_BottomTrawl_Fish_dietcat[,-c(1,3:6)]
+ diet_cat_1 <- RLS_and_BottomTrawl_Fish_dietcat[,-c(1,3:6)] %>%
+   distinct()
  
  #combine taxon with diet_cat for RLS and FISHGLOB project 
  
@@ -387,6 +388,7 @@ fish_com_ready <- fish_com_dt2 %>%
   dplyr::mutate(`density_num/m3` = NA) %>%
   dplyr::mutate(taxon_group = "fish")%>%
   dplyr::mutate(taxonomicLevel = NA) %>%
+  dplyr::mutate(subsite_level3= NA) %>%
   dplyr::select(-c(dm_coeff))
  
 zoo_com_ready<- com_dt4 %>% #add new column names so each dataframes matches. can delete later 
@@ -394,10 +396,11 @@ zoo_com_ready<- com_dt4 %>% #add new column names so each dataframes matches. ca
                 biomass_kg = NA,
                 taxonomicLevel = NA,
                 ind_bio = NA,
-                density = NA)
+                density = NA,
+                `density_num/m2` = NA)
   
-#colnames(zoo_com_ready)
-#colnames(fish_com_ready)
+#sort(colnames(zoo_com_ready))
+#sort(colnames(fish_com_ready))
  
 
 all_com_data <- rbind(zoo_com_ready, fish_com_ready)
