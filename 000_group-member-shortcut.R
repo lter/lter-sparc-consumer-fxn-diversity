@@ -19,76 +19,89 @@ source("00_setup.R")
 # Clear environment & collect garbage
 rm(list = ls()); gc()
 
+
+# a function to download the csv files from individual folder; 
+# could change the pattern if it is not only the csv files
+download_drive_folder <- function(folder_url, local_subfolder,pattern_in=NULL) {
+  # Convert URL to Drive ID
+  drive_id <- googledrive::as_id(folder_url)
+  
+  # List all files in the folder
+  files <- googledrive::drive_ls(path = drive_id,pattern=pattern_in)
+  
+  # Download each file to the specified local folder
+  purrr::walk2(
+    .x = files$id, 
+    .y = files$name,
+    .f = ~ googledrive::drive_download(
+      file = .x, 
+      overwrite = TRUE, 
+      type = "csv",
+      path = file.path("Data", local_subfolder, .y)
+    )
+  )
+  
+  # Clear environment and run garbage collection
+  rm(list = ls()); gc()
+}
 ## --------------------------- ##
 # Download Keys ----
 ## --------------------------- ##
 
 # Grab relevant Drive folder URL
-key_drive <- googledrive::as_id("https://drive.google.com/drive/folders/1of2tKXcU_KnNDZrYLt3b3smObNrG_aXD")
-
-# List items in that folder
-(key_files <- googledrive::drive_ls(path = key_drive))
-
-# Download them to the relevant local folder
-purrr::walk2(.x = key_files$id, .y = key_files$name,
-             .f = ~ googledrive::drive_download(file = .x, overwrite = T, type = "csv",
-                                                path = file.path("Data", "-keys", .y)))
-
-# Clear environment & collect garbage
-rm(list = ls()); gc()
-
+download_drive_folder(
+  folder_url = "https://drive.google.com/drive/folders/1of2tKXcU_KnNDZrYLt3b3smObNrG_aXD",
+  local_subfolder = "-keys"
+)
 ## --------------------------- ##
 # Download Raw Community Data ----
 ## --------------------------- ##
 
 # Grab relevant Drive folder URL
-comm_drive <- googledrive::as_id("https://drive.google.com/drive/folders/1n6iqs3aK2xWkROI8nPSVfk6ZkYPNpF7F")
+download_drive_folder(
+  folder_url = "https://drive.google.com/drive/folders/1n6iqs3aK2xWkROI8nPSVfk6ZkYPNpF7F",
+  local_subfolder = "community_raw-data"
+)
 
-# List items in that folder
-(comm_files <- googledrive::drive_ls(path = comm_drive))
-
-# Download them to the relevant local folder
-purrr::walk2(.x = comm_files$id, .y = comm_files$name,
-             .f = ~ googledrive::drive_download(file = .x, overwrite = T, type = "csv",
-                                                path = file.path("Data", "community_raw-data", .y)))
-
-# Clear environment & collect garbage
-rm(list = ls()); gc()
                                                 
 ## --------------------------- ##
 # Download Raw Trait Data ----
 ## --------------------------- ##
 
-# Grab relevant Drive folder URL
-trt_drive <- googledrive::as_id("https://drive.google.com/drive/folders/1UAq72kFD8Hh9uV1_He1ijJQ1m4lVg7eK")
-
-# List items in that folder
-(trt_files <- googledrive::drive_ls(path = trt_drive, pattern = ".csv"))
-
-# Download them to the relevant local folder
-purrr::walk2(.x = trt_files$id, .y = trt_files$name,
-             .f = ~ googledrive::drive_download(file = .x, overwrite = T, type = "csv",
-                                                path = file.path("Data", "traits_raw-data", .y)))
-
-# Clear environment & collect garbage
-rm(list = ls()); gc()
-
+download_drive_folder(
+  folder_url = "https://drive.google.com/drive/folders/1UAq72kFD8Hh9uV1_He1ijJQ1m4lVg7eK",
+  local_subfolder = "traits_raw-data"
+)
 ## --------------------------- ##
 # Download Environmental Data ----
 ## --------------------------- ##
 
+download_drive_folder(
+  folder_url = "https://drive.google.com/drive/folders/1yUg4tYF7F-fuamODUOy55JUg8tmaUyYD",
+  local_subfolder = "environmental_raw-data"
+)
+
+#################################################
+##################################################
+# codes below download the tidy data
+#### --------------------------- ##
+# Download community_tidy-data ----
+## --------------------------- ##
+
 # Grab relevant Drive folder URL
-env_drive <- googledrive::as_id("https://drive.google.com/drive/folders/1yUg4tYF7F-fuamODUOy55JUg8tmaUyYD")
+download_drive_folder(
+  folder_url = "https://drive.google.com/drive/folders/1LE1Rr1Hfa1uZPvZoUIr1t18khnsnbeFV",
+  local_subfolder = "community_tidy-data"
+)
 
-# List items in that folder
-(env_files <- googledrive::drive_ls(path = env_drive))
+#### --------------------------- ##
+# Download traits_tidy-data ----
+## --------------------------- ##
 
-# Download them to the relevant local folder
-purrr::walk2(.x = env_files$id, .y = env_files$name,
-             .f = ~ googledrive::drive_download(file = .x, overwrite = T, type = "csv",
-                                                path = file.path("Data", "environmental_raw-data", .y)))
-
-# Clear environment & collect garbage
-rm(list = ls()); gc()
+# Grab relevant Drive folder URL
+download_drive_folder(
+  folder_url = "https://drive.google.com/drive/folders/1KPv27jTBIwGwuHNU3-EyWlubN9xXjIDt",
+  local_subfolder = "traits_tidy-data"
+)
 
 # End ----

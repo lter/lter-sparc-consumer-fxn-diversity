@@ -19,7 +19,7 @@
 # move the zoo_dry_wts data from the trait folder to the community folder. - DONE
 
 # Load libraries
-librarian::shelf(tidyverse, ltertools, stringr, taxize, purrr)
+librarian::shelf(tidyverse, lter/ltertools, stringr, taxize, purrr)
 
 # Get set up
 source("00_setup.R")
@@ -31,7 +31,7 @@ rm(list = ls()); gc()
 
 ##### user input###
 
-run_species_check = "Y" # "Y" indicate we need to run species check against ITIS "N" indicate we can skip the checking process
+run_species_check = "N" # "Y" indicate we need to run species check against ITIS "N" indicate we can skip the checking process
 
 ###  Wrangling zooplankton species names and pull kingdom, phylum, class, order, family, and species names from ITIS
 # read in zooplankton dry weight data 
@@ -184,7 +184,6 @@ zoo_taxa_ready <- left_join(zoo_dry_wts_d1, zoo_taxa_checked, by = "scientific_n
 com_dt<- read.csv(file = file.path("Data", "community_tidy-data", "01_community_harmonized.csv"))
 
 
-
 #### General Wrangling of Harmonized Community Data 
 ## attend to capitalization 
 
@@ -212,8 +211,7 @@ Arctic  <-com_dt2 %>%
 Arctic_den <- Arctic %>% 
   dplyr::mutate(`density_num/m3` = density*1000,
                 temp_c = "7.074284") %>%
-  mutate(sp_code = species) %>%
-  dplyr::select(-species) # remove the species column here so it doesn't conflict with the taxa join later.
+  mutate(sp_code = species) 
 
 Arctic_ready <- Arctic_den
 ########################### end #############################
@@ -233,8 +231,7 @@ Palmer_den <- Palmer %>%
   dplyr::mutate(`density_num/m3` = density/1000,
                  temp_c = "-0.4598606") %>%
   mutate(sp_code = species) %>%
-  dplyr::filter(!density == -1) %>% #remove all rows where species identified but not quantified
-  dplyr::select(-species)# remove the species column here so it doesn't conflict with the taxa join later.
+  dplyr::filter(!density == -1) #remove all rows where species identified but not quantified
 
 
 Palmer_ready <- Palmer_den
@@ -255,9 +252,7 @@ NorthLakes_den <- NorthLakes %>%
   mutate(temp_c = case_when(site %in% 'FI' ~ 24.6,
                             site %in% 'WI' ~ 24.2,
                             site %in% 'MO' ~ 23.9,
-                            site %in% 'ME' ~ 23.2)) %>%
-  dplyr::select(-species) # remove the species column here so it doesn't conflict with the taxa join later. 
-
+                            site %in% 'ME' ~ 23.2)) 
  NorthLakes_ready <- NorthLakes_den
 
 ###################### North Lakes end  ##########################################
@@ -265,15 +260,15 @@ NorthLakes_den <- NorthLakes %>%
 #### Combine all sites (zooplankton) back together and add dry weight, diet_cat and scientific names
  
 com_dt3 <- rbind(Arctic_ready, Palmer_ready, NorthLakes_ready) %>%
-  dplyr::select(-c(density)) %>% #remove original density column
+  dplyr::select(-c(density, kingdom,phylum, order, family, genus, species)) %>% #remove original density column
+   #remove some duplicate column before joining, and use the taxa table information
 #add dry weight, diet_cat and scientific names and rename group column 
- dplyr::left_join(zoo_taxa_ready, by= c("project","sp_code")) %>%
- dplyr::select(-kingdom, -phylum.x, -order.x, -family.x, -genus.x, -species)%>% #remove extra column names added after merge
+ dplyr::left_join(select(zoo_taxa_ready,-species), by= c("project","sp_code")) %>% # the "species" is the scientific name but from worms. #remove extra column names added after merge
  dplyr::rename_with(~ str_remove(., "\\..*")) %>%
- dplyr::mutate(`density_num/m2` = NA) %>%
+ #dplyr::mutate(`density_num/m2` = NA) %>%
  dplyr::rename(`dmperind_g/ind` = drymass_g)
  
-com_dt4 <- com_dt3[,-31] #remove boolean column
+com_dt4 <- com_dt3 #  [,-31] #remove boolean column
  
 ##################################################
  
@@ -284,8 +279,7 @@ com_dt4 <- com_dt3[,-31] #remove boolean column
    dplyr::filter(project == "RLS")
  
  # call in dry weight conversions
- dm_conversion <- read.csv(file.path('Data', "community_raw-data", "dm_conversions_cndwg.csv")) #fix later to pull from community folder not in folder presently?
- #read.csv(file=file.path('Data', "community_raw-data", "dm_conversions_cndwg.csv"),na.strings=c("NA","NA ",""))
+ dm_conversion <- read.csv(file=file.path('Data', "community_raw-data", "dm_conversions_cndwg.csv"),na.strings=c("NA","NA ",""))
  
  
  #obtain individual biomass 
@@ -327,10 +321,23 @@ com_dt4 <- com_dt3[,-31] #remove boolean column
                    site %in% "Maria Island" ~ 17,
                    site %in% "Ninepin Point" ~17
                  )
-   ) 
+   ) %>%
+   dplyr::select(-ind_bio)
  
- RLS_ready <- RLS_den_dm %>%
-   dplyr::select(-transectarea_m2)
+ #RLS_and_BottomTrawl_Fish_dietcat <- read_csv("~/Documents/RLS_and_BottomTrawl_Fish_dietcat.csv")
+ #data not showing up in data folder on computer but when it does can replace above code with 
+ RLS_and_BottomTrawl_Fish_dietcat <-read.csv(file=file.path('Data', "community_raw-data", "RLS_and_BottomTrawl_Fish_dietcat.csv"),na.strings=c("NA","NA ",""),strip.white = T)
+ 
+ diet_cat_1 <- RLS_and_BottomTrawl_Fish_dietcat[,-c(1,3:6)] %>%
+   distinct()
+ 
+ RLS_den_dm2 <- RLS_den_dm %>%
+  left_join(diet_cat_1, by = c("sp_code" = "taxon"))
+ 
+ 
+  RLS_ready <- RLS_den_dm2 %>%
+   dplyr::select(-transectarea_m2) 
+   
  
  ############ end #################
  
@@ -353,29 +360,22 @@ com_dt4 <- com_dt3[,-31] #remove boolean column
                  temp_c = case_when(
                    site %in% "FR-CGFS" ~ 17, #add temp data for North Sea
                    site %in% "NS-IBTS" ~ 16) #add temp data for English Channel 
-   )
+   )%>%
+   dplyr::select(-ind_bio)
  
- FISHGLOB_ready <-FISHGLOB_ind_bio
+ 
+ FISHGLOB_ind_bio1 <-  FISHGLOB_ind_bio %>%
+   left_join(diet_cat_1, by = c("species" = "taxon"))
+ 
+ FISHGLOB_ready <-FISHGLOB_ind_bio1
    
 ##############  end #############
  
  
  #combine fish data and add diet_cat information 
  
- fish_com_dt1 <- rbind(RLS_ready, FISHGLOB_ready)
- 
- #add diet_cat information 
- 
- #RLS_and_BottomTrawl_Fish_dietcat <- read_csv("~/Documents/RLS_and_BottomTrawl_Fish_dietcat.csv")
- #data not showing up in data folder on computer but when it does can replace above code with 
- RLS_and_BottomTrawl_Fish_dietcat <-read.csv(file=file.path('Data', "community_raw-data", "RLS_and_BottomTrawl_Fish_dietcat.csv"),na.strings=c("NA","NA ",""))
- 
- diet_cat_1 <- RLS_and_BottomTrawl_Fish_dietcat[,-c(1,3:6)] %>%
-   distinct()
- 
- #combine taxon with diet_cat for RLS and FISHGLOB project 
- 
- fish_com_dt2 <- left_join(fish_com_dt1, diet_cat_1, by = c("species" = "taxon"))
+ fish_com_dt1 <- rbind(RLS_ready, FISHGLOB_ready) %>%
+   dplyr::select(-c(density))
  
  
 ###combine consumer data 
@@ -383,7 +383,7 @@ com_dt4 <- com_dt3[,-31] #remove boolean column
 #setdiff(names(com_dt4), names(fish_com_dt2))
 
 
-fish_com_ready <- fish_com_dt2 %>%
+fish_com_ready <- fish_com_dt1 %>%
   dplyr::rename(scientific_name = species)%>%
   dplyr::mutate(`density_num/m3` = NA) %>%
   dplyr::mutate(taxon_group = "fish")%>%
@@ -395,8 +395,6 @@ zoo_com_ready<- com_dt4 %>% #add new column names so each dataframes matches. ca
   dplyr::mutate(length_cm = NA,
                 biomass_kg = NA,
                 taxonomicLevel = NA,
-                ind_bio = NA,
-                density = NA,
                 `density_num/m2` = NA)
   
 #sort(colnames(zoo_com_ready))
@@ -421,7 +419,7 @@ all_com_data <- rbind(zoo_com_ready, fish_com_ready)
  comm_path <- file.path("Data", "community_tidy-data", comm_file)
  
  # Export locally
- write.csv(x = com_dt3, na = '', row.names = F, file = comm_path)
+ write.csv(x =  com_v99, na = '', row.names = F, file = comm_path)
  
  # End ----
 

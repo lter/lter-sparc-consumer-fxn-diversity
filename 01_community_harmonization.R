@@ -5,8 +5,12 @@
 ## Standarize and combine (i.e., "harmonize") input datasets
 
 # Load libraries
-librarian::shelf(tidyverse, ltertools)
+librarian::shelf(tidyverse)
+#there is a new version of the ltertools
 
+#devtools::install_github("lter/ltertools")
+
+librarian::shelf(lter/ltertools)
 # Get set up
 source("00_setup.R")
 
@@ -48,6 +52,7 @@ namelist <- sort(intersect(x = key$source, y = names(list_raw)))
 # Now, let's loop across datasets in the key
 for (focal_src in sort(intersect(x = key$source, y = names(list_raw)))){
   
+  #focal_src= "FISHGLOB_NorthSea_EnglishChannel.csv"
   # Progress message
   message("Standarizing file: '", focal_src, "'")
   
@@ -114,12 +119,24 @@ combo_v2 <- combo_v1 %>%
 # Check structure
 dplyr::glimpse(combo_v2)
 
+
+# if there is a date column but the year column is NA, extract year from date, same for month and day
+combo_v3 <- combo_v2 %>%
+  dplyr::mutate(year = ifelse(is.na(year) & !is.na(date),
+                              lubridate::year(lubridate::ymd(date)),
+                              year),
+                month = ifelse(is.na(month) & !is.na(date),
+                               lubridate::month(lubridate::ymd(date)),
+                               month),
+                day = ifelse(is.na(day) & !is.na(date),
+                             lubridate::day(lubridate::ymd(date)),
+                             day))
 ## --------------------------- ##
 # Export ----
 ## --------------------------- ##
 
 # Make a final object
-combo_v99 <- combo_v2
+combo_v99 <- combo_v3
 
 # Double check its structure
 dplyr::glimpse(combo_v99)
