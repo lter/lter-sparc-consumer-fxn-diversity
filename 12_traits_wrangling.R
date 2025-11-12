@@ -279,11 +279,37 @@ dplyr::glimpse(trt_v8)
 supportR::diff_check(old = names(trt_v7), new = names(trt_v8))
 
 ## --------------------------- ##
+# Wrangle Taxonomic Info ----
+## --------------------------- ##
+
+# Need to get a tidy scientific name column
+trt_v9 <- trt_v8 |> 
+  # Fill in missing taxonomic info where possible
+  dplyr::mutate(family = dplyr::case_when(
+    is.na(family) & tolower(taxonomic.resolution) == "family" ~ taxon,
+    T ~ family)) |> 
+  dplyr::mutate(genus = dplyr::case_when(
+    is.na(genus) & tolower(taxonomic.resolution) == "genus" ~ taxon,
+    T ~ genus)) |> 
+  # Identify scientific names where possible
+  dplyr::mutate(scientific_name = dplyr::case_when(
+    stringr::str_detect(string = taxon, pattern = " ") ~ taxon,
+    stringr::str_detect(string = taxon, pattern = "_") ~ gsub(pattern = "_", replacement = ".", x = taxon),
+    !is.na(genus) & !is.na(species) ~ paste0(genus, " ", species),
+    !is.na(genus) & is.na(species) ~ paste0(genus, " sp."),
+    T ~ NA), .after = family) |> 
+  # Rename remaining columns better (or ditch 'em)
+  dplyr::rename(epithet = species)
+
+# Check that out
+dplyr::glimpse(trt_v9)
+
+## --------------------------- ##
 # Export ----
 ## --------------------------- ##
 
 # Make a final object
-trt_v99 <- trt_v8
+trt_v99 <- trt_v9
 
 # Check structure
 dplyr::glimpse(trt_v99)
