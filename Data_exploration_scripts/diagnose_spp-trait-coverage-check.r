@@ -25,8 +25,10 @@ dplyr::glimpse(trt_v1)
 
 # Pare down to just needed information
 trt_v2 <- trt_v1 |> 
-  dplyr::select(-source, -genus, -species, -taxonomic.resolution, -taxon) |> 
-  dplyr::distinct()
+  dplyr::select(-source, -genus, -taxonomic.resolution, -taxon) |> 
+  dplyr::distinct() |> 
+  # And remove any traits lacking a scientific name
+  dplyr::filter(!is.na(scientific_name) & nchar(scientific_name) != 1)
 
 # Check structure
 dplyr::glimpse(trt_v2)
