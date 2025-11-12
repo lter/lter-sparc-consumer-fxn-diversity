@@ -5,7 +5,7 @@
 ## Data cleaning and taxa standardization for terrestrial species data
 
 # Load libraries
-librarian::shelf(tidyverse,  taxize)
+librarian::shelf(tidyverse, supportR, taxize)
 
 # Get set up
 source("00_setup.R")
@@ -90,11 +90,65 @@ spp_v4 <- spp_v3 |>
 # Check structure
 dplyr::glimpse(spp_v4)
 
+## --------------------------- ##
+# ITIS Species Checks ----
+## --------------------------- ##
+
+# Should these species be checked against ITIS?
+run_taxa_check <- FALSE
+
+# If desired (see prior line), check the species against ITIS
+if(run_taxa_check == T){
+
+  # Make a list for storing outputs
+  itis_list <- list()
+
+  # Pare down to just unique scientific names
+  all_spp <- spp_v4 |>   
+    dplyr::pull(scientific_name) |> 
+    unique() |> sort()
+
+for (i in seq_along(all_spp)) {
+  # i <- 1
+  
+  # Grab that species name
+  sp_name <- all_spp[i]
+
+  # Query species taxonomic information with error handling
+  located_species_names <- tryCatch(
+    taxize::tax_name(
+      sci = sp_name,
+      get = c("kingdom", "phylum", "class", "order", "family", "genus", "species"),
+      db = "itis", accepted = TRUE, ask = FALSE),
+    error = function(e) NULL
+  )
+  
+  # Add this to the list
+  itis_list[[sp_name]] <- located_species_names } # close the loop
+  
+  # Unlist the list
+  itis_df <- purrr::list_rbind(x = itis_list)
+
+  # Check structure
+  dplyr::glimpse(itis_df)
+
+  # Export a CSV of species where we fail to identify info from ITIS
+  itis_missing <- dplyr::filter(itis_df, is.na(kingdom))
+  write.csv(x = itis_missing, na = '', row.names = F,
+    file = file.path("Data", "checks", "species-check_missing-from-ITIS.csv"))
+    
+} # Close the conditional
+
+
+
+
+# BASEMENT ----
+
 ##########Only run this if we need to check the species against ITIS###############
 
 if (run_taxa_check =="Y"){
   
-  terrestrial_taxa<- all_sites %>%
+  terrestrial_taxa<- spp_v4 %>%
     #select the scientific_name column. This column originally filled based on LTER sites reported species names
     dplyr::select(scientific_name)%>%
     #Grab all unique species names
