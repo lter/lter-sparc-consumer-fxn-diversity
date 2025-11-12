@@ -2,9 +2,7 @@
 # CFD - Species Harmonization
 ## ---------------------------------------------------- ##
 # Purpose:
-##  "harmonized" terrestrial species names 
-
-# Script author(s): Shalanda Grier, Li Kui, Nick Lyons
+## Harmonize terrestrial species lists
 
 # Load libraries
 librarian::shelf(tidyverse, ltertools, supportR)
@@ -15,61 +13,76 @@ source("00_setup.R")
 # Clear environment & collect garbage
 rm(list = ls()); gc()
 
+## --------------------------- ##
+# Load & Check Key ----
+## --------------------------- ##
 
 # Read in species key
 species_key_v0 <- read.csv(file = file.path("Data", "-keys", "species_datakey.csv"))
 
-#check that all projects called in 
-#unique(species_key_v0$project) #seven total
+# Check that all projects called in 
+unique(species_key_v0$project); length(unique(species_key_v0$project))
 
 # Check key to make sure desired columns are intact 
 species_key <- ltertools::check_key(key = species_key_v0)
 
-#View(species_key)
+# Check structure
+dplyr::glimpse(species_key)
+## View(species_key)
+
+## --------------------------- ##
+# Harmonize Species ----
+## --------------------------- ##
 
 #Harmonize terrestrial species list 
-
-species_v1 <- ltertools::harmonize(key= species_key, data_format = "csv",
+species_v1 <- ltertools::harmonize(key = species_key, data_format = "csv",
                                    raw_folder = file.path("Data", "species_raw-data"))
 
-#View(species_v1)
+# Check structure
+dplyr::glimpse(species_v1)
+## View(species_v1)
 
 ## ----------------------------- ##
-#  Add on Key Metadata ----
+# Attach Metadata from Key ----
 ## ----------------------------- ##
 
-
-#Grab desired metadata stored in data key 
-
+# Grab desired metadata stored in data key 
 species_meta <- species_key_v0 %>%
   dplyr::select(project, data_type, habitat, source) %>%
   dplyr::distinct()
 
-#recheck project 
-#unique(species_meta$project) #seven total 
+# Re-check that all projects called in 
+unique(species_meta$project); length(unique(species_meta$project))
 
-#Attach species meta data using 'source' column
+# Check structure
+dplyr::glimpse(species_meta)
 
+# Attach species meta data using 'source' column
 species_v2 <- species_v1 %>%
   dplyr::left_join(y = species_meta, by = "source") %>%
   dplyr::relocate(project:habitat, .before = source)
 
-#unique(species_v2$project) # error MOHWAK project not attached
+# Check that all projects called in 
+unique(species_v2$project); length(unique(species_v2$project))
 
-########### end #############
+# Check structure
+dplyr::glimpse(species_v2)
 
 ## ---------------------------- ##
 # Export ----
 ## ---------------------------- ##
 
 # Make a final object 
-
 species_v99 <- species_v2 
 
+# Check structure
+dplyr::glimpse(species_v99)
 
 # Identify file name & path
-species_file <-"01_species_harmonized.csv"
+species_file <-"21_species_harmonized.csv"
 species_path <- file.path("Data", "species_tidy-data", species_file)
 
 # Export locally
 write.csv(x = species_v99, na = '', row.names = F, file = species_path)
+
+# End ----
