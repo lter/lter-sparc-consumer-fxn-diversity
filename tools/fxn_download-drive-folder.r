@@ -8,7 +8,7 @@
 #' 
 download_drive_folder <- function(folder_url, local_subfolder, pattern_in = NULL) {
   # Error checks for folder
-  if(is.null(folder_url) || is.character(folder_url) != T || length(folder_url) != 1 || stringr::str_detect(string = folder_url, pattern = "drive.google.com"))
+  if(is.null(folder_url) || is.character(folder_url) != T || length(folder_url) != 1 || stringr::str_detect(string = folder_url, pattern = "drive.google.com") != T)
     stop("'folder_url' must be provided and must be a hyperlink to a Drive folder")
 
   # Error checks for local subfolder
