@@ -68,7 +68,8 @@ download_drive_folder(
 # Download the contents of the relevant Drive folder to the respective local folder
 download_drive_folder(
   folder_url = "https://drive.google.com/drive/folders/1UAq72kFD8Hh9uV1_He1ijJQ1m4lVg7eK",
-  local_subfolder = file.path("Data", "traits_raw-data"))
+  local_subfolder = file.path("Data", "traits_raw-data"),
+  pattern_in = ".csv")
 
 ## --------------------------- ##
 # Download Environmental Data ----
@@ -79,38 +80,32 @@ download_drive_folder(
   folder_url = "https://drive.google.com/drive/folders/1yUg4tYF7F-fuamODUOy55JUg8tmaUyYD",
   local_subfolder = file.path("Data", "environmental_raw-data"))
 
-#################################################
-##################################################
-# codes below download the tidy data
-#### --------------------------- ##
+## --------------------------- ##
 # Download community_tidy-data ----
 ## --------------------------- ##
 
-# Grab relevant Drive folder URL
+# Download the contents of the relevant Drive folder to the respective local folder
 download_drive_folder(
   folder_url = "https://drive.google.com/drive/folders/1LE1Rr1Hfa1uZPvZoUIr1t18khnsnbeFV",
-  local_subfolder = "community_tidy-data"
-)
+  local_subfolder = file.path("Data", "community_tidy-data"))
 
-#### --------------------------- ##
+## --------------------------- ##
 # Download traits_tidy-data ----
 ## --------------------------- ##
 
-# Grab relevant Drive folder URL
+# Download the contents of the relevant Drive folder to the respective local folder
 download_drive_folder(
   folder_url = "https://drive.google.com/drive/folders/1KPv27jTBIwGwuHNU3-EyWlubN9xXjIDt",
-  local_subfolder = "traits_tidy-data"
-)
+  local_subfolder = file.path("Data", "traits_tidy-data"))
 
-### ---------------------------- ##
+## --------------------------- ##
 # Download species_tidy-data ----
 ## ----------------------------- ##
 
-# Grab relevant Drive folder URL
+# Download the contents of the relevant Drive folder to the respective local folder
 download_drive_folder(
   folder_url = "https://drive.google.com/drive/folders/1VOJpEarHAs1csIzAT7pobWXWXjLt6TdN",
-  local_subfolder = "species_tidy-data"
-)
+  local_subfolder = file.path("Data", "species_tidy-data"))
 
 # End ----
 
