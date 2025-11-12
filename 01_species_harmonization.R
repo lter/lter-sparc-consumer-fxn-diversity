@@ -67,5 +67,6 @@ species_path <- file.path("Data", "species_tidy-data", species_file)
 # Export locally
 write.csv(x = species_v99, na = '', row.names = F, file = species_path)
 
-
-
+git_branch()
+git_status()
+git_fetch()
