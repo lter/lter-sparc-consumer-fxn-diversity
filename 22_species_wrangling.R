@@ -4,11 +4,8 @@
 # Purpose:
 ## Data cleaning and taxa standardization for terrestrial species data
 
-# Script author(s): Shalanda Grier, Li Kui, Nick Lyons
-
-
 #Load libraries
-librarian::shelf(tidyverse, stringr, taxize)
+librarian::shelf(tidyverse,  taxize)
 
 # Get set up
 source("00_setup.R")
@@ -16,9 +13,49 @@ source("00_setup.R")
 # Clear environment & collect garbage
 rm(list = ls()); gc()
 
-# Read in the harmonized species data
-species_list_v1 <- read.csv(file.path("Data", "species_tidy-data","01_species_harmonized.csv"),stringsAsFactors = F,na.strings =c("")) 
+## --------------------------- ##
+# Load Data ----
+## --------------------------- ##
 
+# Read in the harmonized species data
+spp_v1 <- read.csv(file.path("Data", "species_tidy-data", "21_species_harmonized.csv")) 
+
+# Check structure
+dplyr::glimpse(spp_v1)
+
+## --------------------------- ##
+# Misc. Housekeeping ----
+## --------------------------- ##
+
+# Let's do some quality of life tweaks
+spp_v2 <- spp_v1 |> 
+  # Repair/remove malformed entries
+  dplyr::mutate(
+    dplyr::across(.cols = dplyr::everything(), 
+                  .fns = ~ stringi::stri_escape_unicode(str = stringi::stri_trans_general(., "latin-ascii") ))) |> 
+  dplyr::mutate(
+    dplyr::across(.cols = dplyr::everything(), 
+                  .fns = ~ gsub(pattern = "\\\\ufffd", replacement = "", x = .))) |> 
+  # Change all empty cells to true NAs
+  dplyr::mutate(dplyr::across(.cols = dplyr::everything(),
+                              .fns = ~ ifelse(test = nchar(.) == 0, yes = NA, no = .)))
+
+# Check structure
+dplyr::glimpse(spp_v2)
+                              
+
+## --------------------------- ##
+# Fix Scientific Name Info ----
+## --------------------------- ##
+
+# Need to standardize how the scientific name is listed
+
+
+
+
+# BASEMENT ----
+
+species_list_v1 <- spp_v1
 
 run_taxa_check = "N" # "Y" indicate we need to run species check against ITIS "N" indicate we can skip the checking process
 
