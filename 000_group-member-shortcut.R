@@ -63,6 +63,15 @@ download_drive_folder(
   local_subfolder = "community_raw-data"
 )
 
+
+## -------------------------- ##
+# Download Raw Terrestrial Species Data ----
+## -------------------------- ##
+
+download_drive_folder(
+  folder_url = "https://drive.google.com/drive/folders/14H0hFBHxiqfubRBZ7DUUOSxMh5NOeiJN",
+  local_subfolder = "species_raw-data"
+)
                                                 
 ## --------------------------- ##
 # Download Raw Trait Data ----
@@ -102,6 +111,16 @@ download_drive_folder(
 download_drive_folder(
   folder_url = "https://drive.google.com/drive/folders/1KPv27jTBIwGwuHNU3-EyWlubN9xXjIDt",
   local_subfolder = "traits_tidy-data"
+)
+
+### ---------------------------- ##
+# Download species_tidy-data ----
+## ----------------------------- ##
+
+# Grab relevant Drive folder URL
+download_drive_folder(
+  folder_url = "https://drive.google.com/drive/folders/1VOJpEarHAs1csIzAT7pobWXWXjLt6TdN",
+  local_subfolder = "species_tidy-data"
 )
 
 # End ----
