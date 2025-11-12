@@ -20,6 +20,7 @@ dir.create(path = file.path("Data"), showWarnings = F)
 # Make some useful, one-off "Data/" subfolders
 dir.create(path = file.path("Data", "-keys"), showWarnings = F)
 dir.create(path = file.path("Data", "checks"), showWarnings = F)
+dir.create(path = file.path("Data", "mixed_tidy-data"), showWarnings = F)
 
 # Create 'raw' and 'tidy' subfolders of "Data/" for each data type
 ## Identify all data types
