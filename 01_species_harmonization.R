@@ -4,6 +4,7 @@
 # Purpose:
 ##  "harmonized" terrestrial species names 
 
+# Script author(s): Shalanda Grier, Li Kui, Nick Lyons
 
 # Load libraries
 librarian::shelf(tidyverse, ltertools, supportR)
@@ -18,12 +19,15 @@ rm(list = ls()); gc()
 # Read in species key
 species_key_v0 <- read.csv(file = file.path("Data", "-keys", "species_datakey.csv"))
 
+#check that all projects called in 
+#unique(species_key_v0$project) #seven total
+
 # Check key to make sure desired columns are intact 
 species_key <- ltertools::check_key(key = species_key_v0)
 
 #View(species_key)
 
-# Harmonize terrestrial species list 
+#Harmonize terrestrial species list 
 
 species_v1 <- ltertools::harmonize(key= species_key, data_format = "csv",
                                    raw_folder = file.path("Data", "species_raw-data"))
@@ -41,13 +45,16 @@ species_meta <- species_key_v0 %>%
   dplyr::select(project, data_type, habitat, source) %>%
   dplyr::distinct()
 
-#View(species_meta)
+#recheck project 
+#unique(species_meta$project) #seven total 
 
-#Attachthe species meta data using 'source'column
+#Attach species meta data using 'source' column
 
 species_v2 <- species_v1 %>%
   dplyr::left_join(y = species_meta, by = "source") %>%
   dplyr::relocate(project:habitat, .before = source)
+
+#unique(species_v2$project) # error MOHWAK project not attached
 
 ########### end #############
 
