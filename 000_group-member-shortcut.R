@@ -19,20 +19,9 @@ source("00_setup.R")
 # Clear environment & collect garbage
 rm(list = ls()); gc()
 
-# a function to download the csv files from individual folder; 
-# could change the pattern if it is not only the csv files
-download_drive_folder <- function(folder_url, local_subfolder, pattern_in = NULL) {
-  # Convert URL to Drive ID
-  drive_id <- googledrive::as_id(folder_url)
-  
-  # List all files in the folder
-  files <- googledrive::drive_ls(path = drive_id, pattern = pattern_in)
-  
-  # Download each file to the specified local folder
-  purrr::walk2(.x = files$id, .y = files$name,
-    .f = ~ googledrive::drive_download(file = .x, overwrite = TRUE, type = "csv",
-                                       path = file.path(local_subfolder, .y)))
-}
+# Load custom function(s)
+purrr::walk(.x = dir(path = file.path("tools"), pattern = "fxn_"),
+            .f = ~ source(file = file.path("tools", .x)))
 
 ## --------------------------- ##
 # Download Keys ----
