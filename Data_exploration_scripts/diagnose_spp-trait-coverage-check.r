@@ -25,7 +25,7 @@ dplyr::glimpse(trt_v1)
 
 # Pare down to just needed information
 trt_v2 <- trt_v1 |> 
-  dplyr::select(-source, -genus, -taxonomic.resolution, -taxon) |> 
+  dplyr::select(-source, -taxonomic.resolution, -taxon) |> 
   dplyr::distinct() |> 
   # And remove any traits lacking a scientific name
   dplyr::filter(!is.na(scientific_name) & nchar(scientific_name) != 1)
@@ -45,7 +45,7 @@ dplyr::glimpse(spp_v1)
 
 # Pare down to just needed information
 spp_v2 <- spp_v1 |> 
-  dplyr::select(scientific_name) |> 
+  dplyr::select(family, genus, scientific_name) |> 
   dplyr::distinct()
 
 # Check structure
@@ -70,9 +70,11 @@ dplyr::glimpse(cvg_v1)
 
 # Identify which species are found in the trait data
 cvg_v2 <- cvg_v1 |> 
-  dplyr::mutate(in_spp_list = ifelse(scientific_name %in% unique(spp_v2$scientific_name),
-    yes = "IN DATA", no = NA), 
-    .before = sex)
+  dplyr::mutate(in_spp_list = dplyr::case_when(
+    scientific_name %in% unique(spp_v2$scientific_name) ~ "SPECIES IN DATA",
+    genus %in% unique(spp_v2$genus) ~ "GENUS IN DATA",
+    family %in% unique(spp_v2$family) ~ "FAMILY IN DATA",
+    ), .before = sex)
 
 # Check structure
 dplyr::glimpse(cvg_v2)
