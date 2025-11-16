@@ -268,4 +268,19 @@ final_fish_spp_traits <- fish_spp_traits_rfishbase %>%
   dplyr::left_join(spp_trt_ready, by = "scientific_name") %>% 
   dplyr::left_join(fish_biomass_ready, by = "scientific_name")
 
+
+#### Make final object 
+
+fish_spp_traits_v99 <- final_fish_spp_traits
+
+# Identify the file name & path
+sparc_fish_file <- "SPARC_fish_spp-traits-fishbase-and-lit.csv"
+sparc_fish_path <- file.path("Data", "traits_raw-data", sparc_fish_file)
+
+# Export locally
+write.csv(x = fish_spp_traits_v99, na = '', row.names = F, file = sparc_fish_path)
+
+#------- End ----------------------
+
+
 #save and share with Camille 
