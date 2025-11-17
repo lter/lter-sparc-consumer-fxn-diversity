@@ -119,7 +119,7 @@ all_traits_v1 <- merge(mean_traits, chr_triats_v2, by= c("scientific_name", "sou
 
 
 
-length(unique(all_triats$scientific_name))
+#length(unique(all_triats$scientific_name))
 
 #### join species and traits table by scientific_name & keep all rows without data 
 
@@ -155,13 +155,13 @@ spp_traits_table_v2 <- dplyr::left_join(spp_traits_table, sparc_trt_data_v2, by 
 ## --------------------------- ##
 
 # Make a final object
-aqu_traits_v99 <-spp_traits_table_v2 #note to self: update this later to add family info for zooplankto species 
+aqu_traits_v99 <-spp_traits_table_v2 #note to self: update this later to add family info for zooplankton species 
 
 # Check structure
 dplyr::glimpse(aqu_traits_v99)
 
 # Identify the file name & path
-aqu_traits_file <- "diagnose_species-trait-coverage-check.csv"
+aqu_traits_file <- "aquatic-trait-species-table-coverage-check.csv"
 aqu_traits_path <- file.path("Data", "mixed_tidy-data", aqu_traits_file)
 
 # Export locally
@@ -176,20 +176,20 @@ write.csv(x = aqu_traits_v99, na = '', row.names = F, file = aqu_traits_path)
 
 ####trait coverage for aquatic consumers  
 
-trait_ungroup <- spp_traits_table %>%
+trait_ungroup <- spp_traits_table_v2 %>%
   ungroup() %>%
   select(-project) 
   
   
 trait_cov <- trait_ungroup %>%
-  dplyr::select(-habitat, -raw_filename, -class, -order, -family.x, -genus.x, -family.y, -genus.y, -taxon, 
+  dplyr::select(-habitat, -raw_filename, -class, -order, -family.x, -genus.x, -taxon, 
                 -epithet, -taxonomic.resolution, -migration)%>%
   dplyr::distinct(scientific_name, .keep_all = TRUE) %>%
   ungroup()
 
-#Calulate the proportion of missing data for each trait 
+#Calculate the proportion of missing data for each trait 
 
-trait_columns <- trait_cov[,c(3:46)]
+trait_columns <- trait_cov[,c(3:47)]
 
 #trait_prop_lifespan <- trait_cov %>%
  # summarise(
@@ -199,14 +199,14 @@ trait_columns <- trait_cov[,c(3:46)]
  # )
 
 all_trait_prop <- trait_cov %>%
-  select(3:46) %>% # Select columns by number
+  select(3:47) %>% # Select columns by number
   summarise(
     across(everything(), ~sum(!is.na(.))), # Count non-NA values
     .names = "{.col}_count"
   ) %>%
   bind_cols(
     trait_cov %>%
-      select(3:46) %>%
+      select(3:47) %>%
       summarise(
         across(everything(), ~mean(!is.na(.)) * 100), # Calculate percentage of non-NA values
         .names = "{.col}_percentage"
@@ -214,7 +214,7 @@ all_trait_prop <- trait_cov %>%
   ) 
 
 
-trait_cov_per <- all_trait_prop[,c(44:87)]
+trait_cov_per <- all_trait_prop[,c(47:92)]
 #duplicate_rows <- chr_triats %>%
   #group_by(scientific_name) %>%
   #filter(n() > 1) %>%
