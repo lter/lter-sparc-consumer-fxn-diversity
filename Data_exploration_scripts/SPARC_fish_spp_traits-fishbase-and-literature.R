@@ -35,7 +35,7 @@ data_v2 <- data_v1 |>
   dplyr::select(project, habitat, raw_filename, scientific_name, 
                 class,order, family, genus) |> 
   dplyr::group_by(project) |>
-  dplyr::distinct() #1801 distinct rows names 
+  dplyr::distinct() 
 
 # Check structure
 dplyr::glimpse(data_v2)
@@ -43,7 +43,7 @@ dplyr::glimpse(data_v2)
 
 spp_names_distinct <- data_v1 %>%
   select(scientific_name) %>%
-  distinct() #1598 distinct species 
+  distinct() 
 
 #################### Fish Species Names ##########################
 
@@ -55,7 +55,7 @@ spp_names_distinct <- data_v1 %>%
 spp_names_v1 <- data_v2 %>%
   filter(project %in% c("MCR", "SBC", "FCE", "CoastalCA", "VCR", "PIE", "RLS", "FISHGLOB")) %>%
   select(project, scientific_name) %>%
-  distinct() # 1356 fish species so that leaves about 242 zooplankton taxa 
+  distinct() 
 
 unique(spp_names_v1$project)
 #isolate distinct species names 
