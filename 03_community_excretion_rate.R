@@ -88,15 +88,20 @@ cons_np_ratio <- cons %>%
 
 ##################### end of bradley's code #####################
 
-### skipping pivot longer below because my machine can't handle it... haha
+### getting the local cfd file than the all sites files. 
+col_list <- c("project","habitat","raw_filename","site","subsite_level1","subsite_level2","subsite_level3","date","year","month","day",
+  "sp_code","count_num","transectarea_m","transectarea_m2","length_cm","biomass_g","density_num.m","density_num.m2","density_num.m3",
+  "dmperind_g.ind","nind_ug.hr","pind_ug.hr","temp_c",
+  "scientific_name","diet_cat","taxa_group","kingdom","phylum","class","order","family","genus") 
+
 exc_df <- cons_np_ratio |>
   dplyr::select(-c(N_vert_coef,N_diet_coef,Nexc_log10,P_vert_coef,P_diet_coef,Pexc_log10,data_type))%>%
   rename(`dmperind_g.ind`=dmperind,temp_c=temp,raw_filename=source,taxa_group=taxon_group,nind_ug.hr=`nind_ug/hr`,pind_ug.hr=`pind_ug/hr`)%>%
   mutate(subsite_level1=as.character(subsite_level1),
          subsite_level2=as.character(subsite_level2),
          subsite_level3=as.character(subsite_level3)) %>%
-  dplyr::mutate(`density_num.m` = NA,'transectarea_m' = NA) # add this for the CND project
-
+  dplyr::mutate(`density_num.m` = NA,'transectarea_m' = NA)  %>%# add this for the CND project
+  dplyr::select(all_of(col_list)) 
 
 #merge with the CND data
 cnd <- read.csv(file.path("Data", "community_raw-data","harmonized_consumer_excretion_CLEAN_v3.csv"),stringsAsFactors = F,na.strings =c("."))
@@ -117,9 +122,7 @@ cnd1<-cnd %>%
 #check differences in column names and check column names to prepare to combine all consumer data
 # setdiff(sort(names(exc_df)),sort(names(cnd1)))
 comball <- rbind(exc_df, cnd1) %>%
-  dplyr::select(project,habitat,raw_filename,site,subsite_level1,subsite_level2,subsite_level3,date,year,month,day,
-sp_code,count_num,transectarea_m,transectarea_m2,length_cm,biomass_g,`density_num.m`,`density_num.m2`, `nind_ug.hr`,`pind_ug.hr`,
-temp_c,scientific_name,diet_cat,taxa_group, kingdom,phylum, class, order, family, genus) 
+  dplyr::select(all_of(col_list)) 
 
 #### export and write to the drive
 # Export only the sparc data
@@ -138,6 +141,7 @@ write.csv(x = comball, na = '', row.names = F, file = tidy_path1)
 
 ###open the file
 # cfd <- read.csv(file.path("Data", "community_tidy-data","03_harmonized_consumer_excretion_sparcsite.csv"),stringsAsFactors = F,na.strings =c(""))
+# all <- read.csv(file.path("Data", "community_tidy-data","04_harmonized_consumer_excretion_sparc_cnd_site.csv"),stringsAsFactors = F,na.strings =c(""))
 
 
 # End ----
