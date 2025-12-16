@@ -342,8 +342,8 @@ com_dt4 <- com_dt3 #  [,-31] #remove boolean column
   left_join(diet_cat_1, by = c("sp_code" = "taxon"))
 
 
-  RLS_ready <- RLS_den_dm2 %>%
-   dplyr::select(-transectarea_m2)
+  RLS_ready <- RLS_den_dm2 #%>%
+   #dplyr::select(-transectarea_m2) #keep the transectarea for later in case
 
 
  ############ end #################
@@ -398,12 +398,23 @@ fish_com_ready <- fish_com_dt1 %>%
   dplyr::mutate(subsite_level3= NA) %>%
   dplyr::select(-c(dm_coeff))
 
-zoo_com_ready<- com_dt4 %>% #add new column names so each dataframes matches. can delete later
-  dplyr::mutate(length_cm = NA,
-                biomass_kg = NA,
-                taxonomicLevel = NA,
-                `density_num/m2` = NA)
 
+# # desired columns with their NA type
+needed <- list(length_cm = NA_integer_,
+                biomass_kg = NA_real_,
+                taxonomicLevel = NA_character_,
+                `density_num/m2` = NA_real_,
+               count_num = NA_integer_,
+               transectarea_m2 = NA_real_,
+               density_num_km2 = NA_real_ 
+)
+
+missing <- setdiff(names(needed), names(com_dt4))
+
+zoo_com_ready<- com_dt4 %>% #add new column names so each dataframes matches. can delete later
+      dplyr::mutate(!!!needed[missing])  
+
+#setdiff(colnames(zoo_com_ready), colnames(fish_com_ready))
 #sort(colnames(zoo_com_ready))
 #sort(colnames(fish_com_ready))
 
