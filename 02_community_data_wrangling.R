@@ -324,9 +324,9 @@ com_dt4 <- com_dt3 #  [,-31] #remove boolean column
    dplyr::mutate(`dmperind_g/ind` = ind_bio *dm_coeff,
                  `density_num/m2` = count_num/transectarea_m2,
                  temp_c= case_when(
-                   site %in% "Jervis Bay" ~ 22.3,# assign temperature
+                   site %in% "Rottnest Island" ~ 21,# assign temperature
                    site %in% "Maria Island" ~ 17,
-                   site %in% "Ninepin Point" ~17
+                   site %in% "Ningaloo Reef" ~ 24.9
                  )
    ) %>%
    dplyr::select(-ind_bio)
