@@ -331,11 +331,10 @@ com_dt4 <- com_dt3 #  [,-31] #remove boolean column
    ) %>%
    dplyr::select(-ind_bio)
 
- #RLS_and_BottomTrawl_Fish_dietcat <- read_csv("~/Documents/RLS_and_BottomTrawl_Fish_dietcat.csv")
- #data not showing up in data folder on computer but when it does can replace above code with
- RLS_and_BottomTrawl_Fish_dietcat <-read.csv(file=file.path('Data', "community_raw-data", "RLS_and_BottomTrawl_Fish_dietcat.csv"),na.strings=c("NA","NA ",""),strip.white = T)
+ 
+ RLS_and_BottomTrawl_Fish_dietcat <-read.csv(file=file.path('Data', "community_raw-data", "RLS_FISHGLOB_updated_diet.csv"),na.strings=c("NA","NA ",""),strip.white = T)
 
- diet_cat_1 <- RLS_and_BottomTrawl_Fish_dietcat[,-c(1,3:6)] %>%
+ diet_cat_1 <- RLS_and_BottomTrawl_Fish_dietcat[,-c(1,3:6,8:9)] %>%
    distinct()
 
  RLS_den_dm2 <- RLS_den_dm %>%
