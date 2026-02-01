@@ -66,7 +66,8 @@ trtlong_v2 <- trtlong_v1 %>%
   # Pare down to only traits of interest
   dplyr::filter(trait_name %in% c("Mass", "Activity", "wetWeight", 
                                   "bodyLengthMax", "reproductionMode", 
-                                  "clutchSize", "eggWeight", "trophicGroup", "fecundity")) %>% 
+                                  "clutchSize", "eggWeight", "trophicGroup", "fecundity",
+                                  "respirationRate_15C")) %>% 
   # Standardize trait names
   dplyr::mutate(trait_std = dplyr::case_when(
     ## Reproductive traits
@@ -81,6 +82,7 @@ trtlong_v2 <- trtlong_v1 %>%
     ## Others
     trait_name %in% c("Activity") ~ "active.time_category_ordinal",
     trait_name %in% c("trophicGroup") ~ "diet_trophic.level_ordinal",
+    trait_name %in% c("respirationRate_15C") ~ "metabolism_metabolic.rate_oxygen.per.hour_ul",
     ## If not standardized, add a flag
     T ~ "NOT FIXED"))
 
