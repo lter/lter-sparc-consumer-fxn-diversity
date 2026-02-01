@@ -267,7 +267,12 @@ trt_v8 <- trt_v7 %>%
     active.time_nocturnal_binary == 1 ~ "nocturnal",
     active.time_crepuscular_binary == 1 ~ "crepuscular",
     T ~ NA)) %>%
-  dplyr::select(-active.time_diurnal_binary, -active.time_nocturnal_binary, -active.time_crepuscular_binary) %>%
+  dplyr::select(-active.time_diurnal_binary, -active.time_nocturnal_binary, -active.time_crepuscular_binary) %>% 
+  dplyr::mutate(active_time.ordinal = case_when(
+  active_time.ordinal == 1 ~ "diurnal",
+  active_time.ordinal == 2 ~ "cathermal",
+  active_time.ordinal == 3 ~ "nocturnal"
+  )) %>%
   # And relocate some of these columns better
   dplyr::relocate(dplyr::starts_with(c("length_adult", "length_offspring", "length_egg")),
                   .after = dplyr::starts_with("reproduction_"))
