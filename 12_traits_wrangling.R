@@ -189,6 +189,30 @@ trt_v8 <- trt_v7 %>%
     diet_invertivore.INVLVFSH_binary == 1 ~ "carnivore",
     diet_carnivore.FSHCRCRB_binary == 1 ~ "carnivore",
     T ~ NA)) %>%
+  #### Assign 'broad' trophic to Brandl et al. 2018 'broad' item cat
+  dplyr::mutate(diet_trophic.level.broad_ordinal = dplyr::case_when(
+    diet_trophic.level.broad_ordinal == "Crustacea" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Sagittoidea" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Mollusca" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Annelida" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Teleostei" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Detritus" ~ "detritivore",
+    diet_trophic.level.broad_ordinal == "Prim_prod" ~ "herbivore",
+    diet_trophic.level.broad_ordinal == "Cnidaria" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Sipuncula" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Protozoa" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Nematoda" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Porifera" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Echinodermata" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Chelicerata" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Insecta" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Bryozoa" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Nemertea" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Tunicata" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Turbellaria" ~ "carnivore",
+    diet_trophic.level.broad_ordinal == "Ctenophora" ~ "carnivore",
+    T ~ diet_trophic.level.broad_ordinal
+  )) %>%
   ### Flesh out 'specific' trophic level
   dplyr::mutate(diet_trophic.level.specific_ordinal = dplyr::case_when(
     !is.na(diet_trophic.level.specific_ordinal) ~ tolower(diet_trophic.level.specific_ordinal),
@@ -271,7 +295,8 @@ trt_v8 <- trt_v7 %>%
   dplyr::mutate(active_time.ordinal = case_when(
   active_time.ordinal == 1 ~ "diurnal",
   active_time.ordinal == 2 ~ "cathermal",
-  active_time.ordinal == 3 ~ "nocturnal"
+  active_time.ordinal == 3 ~ "nocturnal",
+  T ~ NA
   )) %>%
   # And relocate some of these columns better
   dplyr::relocate(dplyr::starts_with(c("length_adult", "length_offspring", "length_egg")),
