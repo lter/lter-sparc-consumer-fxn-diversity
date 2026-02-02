@@ -191,28 +191,16 @@ trt_v8 <- trt_v7 %>%
     T ~ NA)) %>%
   #### Assign 'broad' trophic to Brandl et al. 2018 'broad' item cat
   dplyr::mutate(diet_trophic.level.broad_ordinal = dplyr::case_when(
-    diet_trophic.level.broad_ordinal == "Crustacea" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Sagittoidea" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Mollusca" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Annelida" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Teleostei" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Detritus" ~ "detritivore",
-    diet_trophic.level.broad_ordinal == "Prim_prod" ~ "herbivore",
-    diet_trophic.level.broad_ordinal == "Cnidaria" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Sipuncula" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Protozoa" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Nematoda" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Porifera" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Echinodermata" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Chelicerata" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Insecta" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Bryozoa" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Nemertea" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Tunicata" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Turbellaria" ~ "carnivore",
-    diet_trophic.level.broad_ordinal == "Ctenophora" ~ "carnivore",
+    diet_trophic.level.broad_ordinal %in% c("crustacea","sagittoidea","mollusca",
+                                            "annelida","teleostei","cnidaria",
+                                            "sipuncula","protozoa", "nematoda",
+                                            "porifera","echinodermata", "chelicerata",
+                                            "insecta", "bryozoa","nemertea", 
+                                            "tunicata","turbellaria","ctenophora") ~ "carnivore",
+    diet_trophic.level.broad_ordinal %in% c("detritus") ~ "detritivore",
+    diet_trophic.level.broad_ordinal %in% c("prim_prod") ~ "herbivore",
     T ~ diet_trophic.level.broad_ordinal
-  )) %>%
+  ))%>%
   ### Flesh out 'specific' trophic level
   dplyr::mutate(diet_trophic.level.specific_ordinal = dplyr::case_when(
     !is.na(diet_trophic.level.specific_ordinal) ~ tolower(diet_trophic.level.specific_ordinal),
@@ -253,6 +241,11 @@ trt_v8 <- trt_v7 %>%
   dplyr::mutate(length_adult_cm = dplyr::case_when(
     !is.na(length_adult_mm) ~ length_adult_mm / 10,
     T ~ NA)) %>%
+  ## Adult mean length
+  dplyr::mutate(length_mean_cm = dplyr::case_when(
+    !is.na(length_mean_mm) ~ length_mean_mm/10,
+    T ~ NA
+  )) %>%
   ### Adult max length
   dplyr::mutate(length_adult.max_cm = dplyr::case_when(
     !is.na(length_adult.max_cm) ~ length_adult.max_cm,
