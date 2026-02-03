@@ -80,9 +80,10 @@ trtlong_v2 <- trtlong_v1 %>%
     trait_name %in% c("eggWeight") ~ "weight_egg",
     trait_name %in% c("bodyLengthMax") ~ "length_adult.max",
     ## Others
-    trait_name %in% c("Activity") ~ "active.time_category_ordinal",
+    trait_name %in% c("Activity") ~ "active.time_category_ordinal", 
     trait_name %in% c("trophicGroup") ~ "diet_trophic.level_ordinal",
     trait_name %in% c("respirationRate_15C") ~ "metabolism_metabolic.rate_oxygen.per.hour_ul",
+    #range for zooplankton
     ## If not standardized, add a flag
     T ~ "NOT FIXED"))
 
