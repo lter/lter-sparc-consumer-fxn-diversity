@@ -196,9 +196,10 @@ trt_v8 <- trt_v7 %>%
                                             "sipuncula","protozoa", "nematoda",
                                             "porifera","echinodermata", "chelicerata",
                                             "insecta", "bryozoa","nemertea", 
-                                            "tunicata","turbellaria","ctenophora") ~ "carnivore",
+                                            "tunicata","turbellaria","ctenophora", "carnivorous") ~ "carnivore",
     diet_trophic.level.broad_ordinal %in% c("detritus") ~ "detritivore",
-    diet_trophic.level.broad_ordinal %in% c("prim_prod") ~ "herbivore",
+    diet_trophic.level.broad_ordinal %in% c("prim_prod", "herbivorous") ~ "herbivore",
+    diet_trophic.level.broad_ordinal %in% c("omnivorous") ~ "omnivore",
     T ~ diet_trophic.level.broad_ordinal
   ))%>%
   ### Flesh out 'specific' trophic level
@@ -283,13 +284,13 @@ trt_v8 <- trt_v7 %>%
     active.time_diurnal_binary == 1 ~ "diurnal",
     active.time_nocturnal_binary == 1 ~ "nocturnal",
     active.time_crepuscular_binary == 1 ~ "crepuscular",
-    T ~ NA)) %>%
+    T ~ active.time_category_ordinal)) %>%
   dplyr::select(-active.time_diurnal_binary, -active.time_nocturnal_binary, -active.time_crepuscular_binary) %>% 
-  dplyr::mutate(active_time.ordinal = case_when(
-  active_time.ordinal == 1 ~ "diurnal",
-  active_time.ordinal == 2 ~ "cathermal",
-  active_time.ordinal == 3 ~ "nocturnal",
-  T ~ NA
+  dplyr::mutate(active.time_category_ordinal = dplyr::case_when(
+    active.time_category_ordinal == "1" ~ "diurnal",
+    active.time_category_ordinal == "2" ~ "cathermal",
+    active.time_category_ordinal == "3" ~ "nocturnal",
+  T ~ active.time_category_ordinal
   )) %>%
   # And relocate some of these columns better
   dplyr::relocate(dplyr::starts_with(c("length_adult", "length_offspring", "length_egg")),
