@@ -61,7 +61,6 @@ master_sp_list <- sp_pro_list %>%
 program_sp_trt_data <- dplyr::left_join(master_sp_list, all_trt, by="scientific_name")
 
 
-
 #-------------------Start calculate mean trait values for all trait databases for scientific_names: 
 #-------------------either species, genus, family, along w/order and/or phylum for zoo 
 
@@ -88,6 +87,7 @@ master_sp_tr_mat <- dplyr::left_join(mean_trt_source, trt_chr_data, by = "scient
   dplyr::mutate(across(where(is.character), ~ str_replace_all(.x, "; NA", "")))%>%
   dplyr::mutate(across(where(is.character), ~ str_replace_all(.x, "NA; ", ""))) %>%
   dplyr::mutate(scientific_name = gsub("\\.", " ", scientific_name))
+
 
 #################### end #####################
 
