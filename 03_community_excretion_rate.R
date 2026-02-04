@@ -26,7 +26,7 @@ dfrm <- df %>%
 # take out the rows that are needed
 
 df1 <-dfrm %>%
-  rename(dmperind=`dmperind_g.ind`,temp=temp_c)
+  dplyr::rename(dmperind=dmperind_g.ind,temp=temp_c)
 
 peace<- df1 %>%
   filter(is.na(dmperind)) %>%
@@ -96,7 +96,7 @@ col_list <- c("project","habitat","raw_filename","site","subsite_level1","subsit
 
 exc_df <- cons_np_ratio |>
   dplyr::select(-c(N_vert_coef,N_diet_coef,Nexc_log10,P_vert_coef,P_diet_coef,Pexc_log10,data_type))%>%
-  rename(`dmperind_g.ind`=dmperind,temp_c=temp,raw_filename=source,taxa_group=taxon_group,nind_ug.hr=`nind_ug/hr`,pind_ug.hr=`pind_ug/hr`)%>%
+  dplyr::rename(dmperind_g.ind=dmperind,temp_c=temp,raw_filename=source,taxa_group=taxon_group,nind_ug.hr= `nind_ug/hr`,pind_ug.hr=`pind_ug/hr`)%>%
   mutate(subsite_level1=as.character(subsite_level1),
          subsite_level2=as.character(subsite_level2),
          subsite_level3=as.character(subsite_level3)) %>%
