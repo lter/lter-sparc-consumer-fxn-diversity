@@ -109,20 +109,200 @@ hist(subset_tr_df2$mass_adult_g, breaks = 50)
 
 
 # TROPHIC LEVELS: keep it as it is
-hist(subset_tr_df$diet_trophic.level_num, breaks = 50)
+hist(subset_tr_df2$diet_trophic.level_num, breaks = 50)
+
+
+# REPRODCTION RATE:
+hist(subset_tr_df2$reproduction_reproductive.rate_num.offspring.per.year, breaks = 50)
+
+# Log transform:
+subset_tr_df2$reproduction_reproductive.rate_num.offspring.per.year <- log10(subset_tr_df2$reproduction_reproductive.rate_num.offspring.per.year +1)
+hist(subset_tr_df2$reproduction_reproductive.rate_num.offspring.per.year, breaks = 50)
 
 
 # 3 - Link traits to program and only keep fish/mammals/amphib =================
 
 
+# Keep only programs for fish, mammals and amphibians:
+subset_sp_list <- sp_pro_list %>% 
+  dplyr::filter(project %in% c("CoastalCA", "FCE", "SBC", "MCR", "VCR", "RLS",
+                               "FISHGLOB", "KBS_MAM", "SEV", 
+                               "MOHONK", "KBS_AMP")) %>% 
+  dplyr::mutate(project = factor(project))
+
+# Create a new column for Taxa:
+subset_sp_list <- subset_sp_list %>% 
+  mutate(taxa = case_when(
+    project == "CoastalCA" ~ "Fish",
+    project == "FCE" ~ "Fish",
+    project == "SBC" ~ "Fish",
+    project == "MCR" ~ "Fish",
+    project == "VCR" ~ "Fish",
+    project == "RLS" ~ "Fish",
+    project == "FISHGLOB" ~ "Fish",
+    project == "KBS_MAM" ~ "Mammals",
+    project == "SEV" ~ "Mammals",
+    project == "MOHONK" ~ "Amphibians",
+    project == "KBS_AMP" ~ "Amphibians")) %>% 
+  dplyr::mutate(Taxa = factor(taxa))
+
+# Reorder and select columns:
+sp_list_final <- subset_sp_list %>% 
+  dplyr::select(c("project", "habitat", "scientific_name",
+                  "taxa")) %>% 
+  dplyr::rename(species = "scientific_name")
+
+# Link species list (projects) with traits:
+proj_traits_df <- dplyr::left_join(sp_list_final, 
+                                   subset_tr_df2,
+                                   by = "species")
 
 
+# 4 - Explore traits distribution across programs and taxa ======================
 
-# 4 - Explore trats distribution across programs and taxa ======================
 
+# Define the order of projects:
+projects_levels <- c("CoastalCA", "SBC", 
+                    "FCE", 
+                    "VCR",
+                    "MCR", "RLS", 
+                    "FISHGLOB",
+                    "SEV",
+                    "KBS_MAM",
+                    "MOHONK",
+                    "KBS_AMP")
+proj_traits_df$project <- factor(proj_traits_df$project,
+                                 levels = projects_levels)
+
+# Define colors:
+cols <- c(
+  Coastal_CA = "#0B3C49",
+  SBC = "#2F8F83",
+  FCE = "#3A6F4D",
+  VCR = "#66C2A5",
+  MCR = "#1F78B4",
+  RLS  = "#33A1C9",
+  FISHGLOB = "#4C6A92",
+  SEV = "#C9A227",
+  KBS_MAM = "#8B6B3E",
+  MOHONK = "#E78AC3",
+  KBS_AMP = "#C51B7D")
+
+
+# Log body mass:
+body_mass_distrib <- ggplot2::ggplot(proj_traits_df, 
+                                     ggplot2::aes(x = mass_adult_g,
+                                                  colour = project,
+                                                  fill   = project)) +
+  ggplot2::geom_density(alpha = 0.5, linewidth = 0.8) +
+  ggplot2::facet_wrap(~ taxa, ncol = 1) +
+  ggplot2::scale_colour_manual(values = cols, guide = "none") +
+  ggplot2::scale_fill_manual(values = cols) +
+  ggplot2::labs(
+    x = "Adult body mass (log)",
+    y = "Density",
+    fill = "Project") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    strip.background = ggplot2::element_rect(fill = "grey90"),
+    panel.grid.minor = ggplot2::element_blank())
+body_mass_distrib
+
+
+# Log life span:
+life_span_distrib <- ggplot2::ggplot(proj_traits_df, 
+                                     ggplot2::aes(x = age_life.span_years,
+                                                  colour = project,
+                                                  fill   = project)) +
+  ggplot2::geom_density(alpha = 0.5, linewidth = 0.8) +
+  ggplot2::facet_wrap(~ taxa, ncol = 1) +
+  ggplot2::scale_colour_manual(values = cols, guide = "none") +
+  ggplot2::scale_fill_manual(values = cols) +
+  ggplot2::labs(
+    x = "Life Span (log)",
+    y = "Density",
+    fill = "Project") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    strip.background = ggplot2::element_rect(fill = "grey90"),
+    panel.grid.minor = ggplot2::element_blank())
+life_span_distrib
+
+# Trophic Level:
+trophic_level_distrib <- ggplot2::ggplot(proj_traits_df, 
+                                     ggplot2::aes(x = diet_trophic.level_num,
+                                                  colour = project,
+                                                  fill   = project)) +
+  ggplot2::geom_density(alpha = 0.5, linewidth = 0.8) +
+  ggplot2::facet_wrap(~ taxa, ncol = 1) +
+  ggplot2::scale_colour_manual(values = cols, guide = "none") +
+  ggplot2::scale_fill_manual(values = cols) +
+  ggplot2::labs(
+    x = "Trophic Level",
+    y = "Density",
+    fill = "Project") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    strip.background = ggplot2::element_rect(fill = "grey90"),
+    panel.grid.minor = ggplot2::element_blank())
+trophic_level_distrib
+
+
+# Reproduction Rate:
+reprod_rate_distrib <- ggplot2::ggplot(proj_traits_df, 
+                                         ggplot2::aes(x = reproduction_reproductive.rate_num.offspring.per.year,
+                                                      colour = project,
+                                                      fill   = project)) +
+  ggplot2::geom_density(alpha = 0.5, linewidth = 0.8) +
+  ggplot2::facet_wrap(~ taxa, ncol = 1) +
+  ggplot2::scale_colour_manual(values = cols, guide = "none") +
+  ggplot2::scale_fill_manual(values = cols) +
+  ggplot2::labs(
+    x = "Reproduction Rate (log)",
+    y = "Density",
+    fill = "Project") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    strip.background = ggplot2::element_rect(fill = "grey90"),
+    panel.grid.minor = ggplot2::element_blank())
+reprod_rate_distrib
+
+
+# Activity period (as categorical compute prop of sp having a given cat):
+prop_df <- proj_traits_df %>%
+  dplyr::filter(!is.na(active.time_category_ordinal)) %>%
+  dplyr::group_by(taxa, project, active.time_category_ordinal) %>%
+  dplyr::summarise(n = n_distinct(species), .groups = "drop") %>%
+  dplyr::group_by(taxa, project) %>%
+  dplyr::mutate(prop = n / sum(n)) %>%
+  dplyr::ungroup()
+prop_df <- prop_df %>%
+  dplyr::mutate(active.time_category_ordinal =
+           factor(active.time_category_ordinal,
+                  ordered = TRUE))
+
+act_period_distrib <- ggplot2::ggplot(prop_df,
+                                 ggplot2::aes(x = active.time_category_ordinal,
+                                              y = prop,
+                                              group = project,
+                                              colour = project)) +
+  ggplot2::geom_line(alpha = 0.8, linewidth = 0.9) +
+  ggplot2::geom_point(size = 2) +
+  ggplot2::facet_wrap(~ taxa, ncol = 1) +
+  ggplot2::scale_colour_manual(values = cols) +
+  ggplot2::labs(
+    x = "Activity time category",
+    y = "Proportion of species") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                 axis.text.x = ggplot2::element_text(angle = 45,
+                                                     hjust = 1,
+                                                     vjust = 1))
+act_period_distrib
 
 
 
 # After:
 # For the functional space, remove reproductive rate (low coverage):
 
+# 4 - Explore traits distribution - Focus on fish ==============================
