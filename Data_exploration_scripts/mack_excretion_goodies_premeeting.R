@@ -236,3 +236,8 @@ dt_total |>
 # 3. Palmer estimates exist for N cycling, but appear to be crazy low
 # 4. Appears that estimates for RLS and maybe FISHGLOB are not at the m2 resolution?
 
+test <- dat |> 
+      filter(project == 'Arctic') |> 
+      select(scientific_name) |> 
+      distinct()
+test
