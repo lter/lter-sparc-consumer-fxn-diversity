@@ -5,8 +5,13 @@
 
 ##need to FIX code! 
 
-#Purpose: Combine all trait data  
-#Identify the proportion of missing data for each trait across all consumers and consumer groups  
+#Purpose:  1) Combine all trait data 2) Wrangle and Clean species x trait matrix to use for further exploration  
+#Identify the proportion of missing data for each trait across all consumer groups  
+
+#Shalanda Grier
+#2/2026
+
+#----------------------------------------------------------------------------
 
 # Load libraries
 librarian::shelf(tidyverse, dplyr, funbiogeo, ggplot2)
@@ -19,18 +24,16 @@ rm(list = ls()); gc()
 
 
 ###################
-#Load Consumer Data 
+#Load Consumer Taxa List  
 ##################
 
 
 # Read in master species list for all programs
 sp_pro_list <- read.csv(file.path("Data", "species_tidy-data", "23_species_master-spp-list.csv"))
 
-
 #####################
 #Load Trait Data
 ####################
-
 
 ## Read in all trait databases and clean up if necessary
 
@@ -41,25 +44,66 @@ all_trt <- read.csv(file.path("Data", "traits_tidy-data", "12_traits_wrangled.cs
   dplyr::mutate(across(where(is.character), ~na_if(., ""))) %>%
   dplyr::mutate(across(where(is.numeric),~ ifelse(.x <=0, NA, .x) #replace NA indicators and instances of '0' with NA. otherwise keep original values
     )
-  )
+  ) %>%
+  dplyr::relocate(order, .before= family)
+
+#---------------- end loading data -------------------
 
 
-#Isolate all distinct taxa name across programs, the original master list by project so duplicates across programs with same taxa
+
+# -----------Species list wrangling start --------
+
+sp_pro_list_v2 <- sp_pro_list %>%
+  dplyr::mutate(across(everything(), na_if, y = ""))
+
+#Isolate all distinct taxa names, the original master list by project so duplicates across programs with same taxa
 master_sp_list <- sp_pro_list %>%
   dplyr::select(scientific_name) %>%
   dplyr::distinct() 
 
 #total_sci_name_duplicates <- sum(duplicated(master_sp_list$scientific_name))
-#length(unique(master_sp_list$scientific_name)) # 2848 distinct taxa in master species list 
+#length(unique(master_sp_list$scientific_name)) # 2529 distinct taxa in master species list 
 
-#sci_name_sp_list <- sp_pro_list %>%
-#  dplyr::select(project, scientific_name, family, genus)%>%
-#  dplyr::distinct()
+master_sp_list_v2 <- master_sp_list %>%
+  dplyr::left_join(
+    sp_pro_list_v2 %>%
+      dplyr::select(scientific_name, phylum, class, order, family, genus)%>%
+      dplyr::distinct(),
+    by = "scientific_name")
+
+
+#Check duplicates
+master_sp_duplicates <- sum(duplicated(master_sp_list_v2$scientific_name))  
+#species but have at least one difference in higher order taxonomic level 
+
+#Extract duplicates scientific_names 160 unique scientific_names 
+master_sp_dup_names <-master_sp_list_v2 %>%
+  dplyr::group_by(scientific_name) %>%
+  dplyr::filter(n() > 1) %>%
+  ungroup()
+
+##For now will arbitrarily keep the first occurrence but will go back and check correct class names. Also which source?
+master_sp_remove_dup <- master_sp_dup_names %>%
+  dplyr::group_by(scientific_name) %>%
+  dplyr::slice(1) %>% # select first row for each scientific name
+  dplyr::ungroup() #now 160 obs 
+
+# remove duplicate names from 'master_sp_list_v2' 
+
+master_sp_no_dup <- master_sp_list_v2 %>%
+  dplyr::anti_join(master_sp_dup_names, by= "scientific_name")
+  
+#combine master sp. list with no duplicates with paired down scientific_names 'master_sp_remove_dup'
+
+master_sp_list_ready <- bind_rows(master_sp_no_dup, master_sp_remove_dup) #now should have same names as orig. 'master_sp_list'
+
+
+#-------------------------- end ------------------------------------------
+
 
 
 #Join trait data with program species list 
 program_sp_trt_data <- dplyr::left_join(master_sp_list, all_trt, by="scientific_name")
-
 
 #-------------------Start calculate mean trait values for all trait databases for scientific_names: 
 #-------------------either species, genus, family, along w/order and/or phylum for zoo 
@@ -285,6 +329,8 @@ test_family <- imputed_family %>%
   select(-ends_with(".x"), -ends_with(".y")) %>%
   dplyr::relocate(source, .before = scientific_name)
 
+
+ 
 
 ################################## end ##########################
 
