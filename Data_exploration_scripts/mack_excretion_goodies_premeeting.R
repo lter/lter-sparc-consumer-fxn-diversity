@@ -67,6 +67,7 @@ dt_total |>
       mutate(
             project = fct_reorder(project, median)
       ) |> 
+      # filter(mean < 25000) |>
       ggplot(aes(x = project, y = mean)) + 
       geom_jitter(aes(fill = project), shape = 21, width = 0.3,
                   color ='black', size = 2, stroke = 1, alpha = 0.6) +
@@ -105,6 +106,7 @@ dt_total |>
       mutate(
             project = fct_reorder(project, median)
       ) |> 
+      # filter(mean < 25000) |>
       ggplot(aes(x = project, y = mean)) + 
       geom_jitter(aes(fill = project), shape = 21, width = 0.3,
                   color ='black', size = 2, stroke = 1, alpha = 0.6) +
@@ -143,6 +145,7 @@ dt_total |>
       mutate(
             project = fct_reorder(project, median)
       ) |> 
+      # filter(mean < 25000) |>
       ggplot(aes(x = project, y = mean)) + 
       geom_jitter(aes(fill = project), shape = 21, width = 0.3,
                   color ='black', size = 2, stroke = 1, alpha = 0.6) +
@@ -174,22 +177,88 @@ systems <- dat |>
       select(project, habitat, site, subsite_level1, subsite_level2, subsite_level3) |> 
       distinct()
 
+# dt_total |> 
+#       mutate(project = as.factor(project)) |> 
+#       filter(!project %in% c('Arctic', 'FCE')) |> 
+#       mutate(project = case_when(
+#             project == 'CoastalCA' & site == 'CENTRAL' ~ 'PISCO_C',
+#             project == 'CoastalCA' & site == 'SOUTH' ~ 'PISCO_S',
+#             TRUE ~ project
+#       )) |> 
+#       mutate(
+#             system = case_when(
+#                   project == 'SBC' & habitat == 'beach' ~ site,
+#                   project == 'SBC' & habitat == 'ocean' ~ site,
+#                   project == 'Palmer' ~ site,
+#                   project == 'CCE' ~ paste(site, subsite_level1, sep = ''),
+#                   project == 'NGA' ~ subsite_level1,
+#                   project == 'NorthLakes' ~ site,
+#                   project == 'VCR' ~ paste(subsite_level1, subsite_level2, sep = ''),
+#                   project == 'PIE' ~ site,
+#                   project == 'MCR' ~ paste(subsite_level1, subsite_level2, sep = ''),
+#                   project == 'PISCO_C' ~ subsite_level2,
+#                   project == 'PISCO_S' ~ subsite_level2,
+#                   project == 'FISHGLOB' ~ site,
+#                   project == 'RLS' ~ site,
+#                   
+#             )
+#       ) |> 
+#       group_by(project, system, year) |> 
+#       summarize(
+#             mean = mean(total_nitrogen + 1, na.rm = TRUE),
+#             median = median(total_nitrogen + 1, na.rm = TRUE),
+#             .groups = 'drop'
+#       ) |> 
+#       # filter(mean < 25000) |>
+#       ggplot(aes(x = year, y = mean, fill = system, color = system, group = system)) + 
+#       geom_jitter(aes(fill = system), shape = 21, width = 0.3,
+#                   color ='black', size = 2, stroke = 1, alpha = 0.6) +
+#       geom_smooth(method = 'loess', se = FALSE) +
+#       # geom_boxplot(aes(fill = project), position = position_dodge(0.8),
+#       #              outlier.shape = NA, alpha = 1, size = 1, color = 'black') +
+#       # scale_y_log10(
+#       #       breaks = 10^(-2:6),
+#       #       labels = label_number(big.mark = ",")
+#       # ) +
+#       facet_wrap(~project, scale = 'free') + 
+#       labs(x = 'Project', y = 'Nitrogen Supply (ug/hr/area)',
+#            title = 'Mean Annual Community Nitrogen Supply by Site') + 
+#       theme(
+#             strip.text = element_text(size = 16, face = "bold", colour = "black"),
+#             strip.background = element_blank(),  
+#             axis.text = element_text(size = 12, face = "bold", colour = "black"),
+#             axis.title = element_text(size = 14, face = "bold", colour = "black"),
+#             panel.grid.major = element_blank(),
+#             panel.grid.minor = element_blank(),
+#             panel.border = element_blank(),
+#             panel.background = element_blank(),
+#             axis.line = element_line(colour = "black"),
+#             legend.position = "none",
+#             plot.title = element_text(size = 16, face = "bold", colour = "black",
+#                                       hjust = 0.5)
+#       )
+
 dt_total |> 
       mutate(project = as.factor(project)) |> 
       filter(!project %in% c('Arctic', 'FCE')) |> 
+      mutate(project = case_when(
+            project == 'CoastalCA' & site == 'CENTRAL' ~ 'PISCO_C',
+            project == 'CoastalCA' & site == 'SOUTH' ~ 'PISCO_S',
+            TRUE ~ project
+      )) |> 
       mutate(
             system = case_when(
                   project == 'SBC' & habitat == 'beach' ~ site,
                   project == 'SBC' & habitat == 'ocean' ~ site,
                   project == 'Palmer' ~ site,
-                  project == 'CCE' ~ site,
+                  project == 'CCE' ~ paste(site, subsite_level1, sep = ''),
                   project == 'NGA' ~ subsite_level1,
                   project == 'NorthLakes' ~ site,
-                  project == 'VCR' ~ site,
+                  project == 'VCR' ~ paste(subsite_level1, subsite_level2, sep = ''),
                   project == 'PIE' ~ site,
-                  project == 'MCR' ~ subsite_level1,
-                  project == 'CoastalCA' & site == 'CENTRAL' ~ subsite_level1,
-                  project == 'CoastalCA' & site == 'SOUTH' ~ subsite_level1,
+                  project == 'MCR' ~ paste(subsite_level1, subsite_level2, sep = ''),
+                  project == 'PISCO_C' ~ subsite_level2,
+                  project == 'PISCO_S' ~ subsite_level2,
                   project == 'FISHGLOB' ~ site,
                   project == 'RLS' ~ site,
                   
@@ -201,17 +270,16 @@ dt_total |>
             median = median(total_nitrogen + 1, na.rm = TRUE),
             .groups = 'drop'
       ) |> 
-      # filter(project == 'MCR') |> 
+      # filter(mean < 25000) |>
+      filter(!project == 'CCE' | mean <= 1000) |>
+      filter(!project == 'NorthLakes' | mean <= 2000) |>
+      filter(!project == 'PISCO_S' | mean <= 15000) |>
+      filter(!project == 'SBC' | mean <= 20000) |>
+      filter(!project == 'VCR' | mean <= 1000) |>
       ggplot(aes(x = year, y = mean, fill = system, color = system, group = system)) + 
       geom_jitter(aes(fill = system), shape = 21, width = 0.3,
                   color ='black', size = 2, stroke = 1, alpha = 0.6) +
-      geom_smooth(method = 'loess') +
-      # geom_boxplot(aes(fill = project), position = position_dodge(0.8),
-      #              outlier.shape = NA, alpha = 1, size = 1, color = 'black') +
-      # scale_y_log10(
-      #       breaks = 10^(-2:6),
-      #       labels = label_number(big.mark = ",")
-      # ) +
+      geom_smooth(method = 'loess', se = FALSE) +
       facet_wrap(~project, scale = 'free') + 
       labs(x = 'Project', y = 'Nitrogen Supply (ug/hr/area)',
            title = 'Mean Annual Community Nitrogen Supply by Site') + 
@@ -230,6 +298,42 @@ dt_total |>
                                       hjust = 0.5)
       )
 
+system_m <- dt_total |> 
+      mutate(project = as.factor(project)) |> 
+      filter(!project %in% c('Arctic', 'FCE')) |> 
+      mutate(project = case_when(
+            project == 'CoastalCA' & site == 'CENTRAL' ~ 'PISCO_C',
+            project == 'CoastalCA' & site == 'SOUTH' ~ 'PISCO_S',
+            TRUE ~ project
+      )) |> 
+      mutate(
+            system = case_when(
+                  project == 'SBC' & habitat == 'beach' ~ site,
+                  project == 'SBC' & habitat == 'ocean' ~ site,
+                  project == 'Palmer' ~ site,
+                  project == 'CCE' ~ paste(site, subsite_level1, sep = ''),
+                  project == 'NGA' ~ subsite_level1,
+                  project == 'NorthLakes' ~ site,
+                  project == 'VCR' ~ paste(subsite_level1, subsite_level2, sep = ''),
+                  project == 'PIE' ~ site,
+                  project == 'MCR' ~ paste(subsite_level1, subsite_level2, sep = ''),
+                  project == 'PISCO_C' ~ subsite_level2,
+                  project == 'PISCO_S' ~ subsite_level2,
+                  project == 'FISHGLOB' ~ site,
+                  project == 'RLS' ~ site,
+                  
+            )
+      ) |> 
+      group_by(project, system, year) |> 
+      summarize(
+            mean = mean(total_nitrogen + 1, na.rm = TRUE),
+            median = median(total_nitrogen + 1, na.rm = TRUE),
+            .groups = 'drop'
+      )
+
+test <- system_m |> 
+      filter(project == 'NGA')
+test
 # Questions that need addressed -------------------------------------------
 # 1. No estimate for FCE... seems that all the m2 and m3 sites were integrated with sampling area in the harmonization process
 # 2. No estimate for the Arctic... seems that it is likely missing the body size information to estimate what we need here
