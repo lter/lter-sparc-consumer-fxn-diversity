@@ -80,7 +80,7 @@ subset_tr_df$active.time_category_ordinal <- as.factor(subset_tr_df$active.time_
 ## Check numeric traits distribution, correct and log when needed:
 
 # LIFESPAN:
-hist(subset_tr_df$age_life.span_years)
+hist(subset_tr_df$age_life.span_years, breaks = 50)
 
 # Correct some sp have - or 0 lifespan and homosapiens is in the db (?):
 # CHANGE LATER: Remove data for these species (look for it later) and rm humans:
@@ -88,6 +88,9 @@ subset_tr_df$age_life.span_years[which(subset_tr_df$species == "Hemichromis leto
 subset_tr_df$age_life.span_years[which(subset_tr_df$species == "Channa marulius")] <- NA
 subset_tr_df$age_life.span_years[which(subset_tr_df$species == "Gambusia holbrooki")] <- NA
 subset_tr_df$age_life.span_years[which(subset_tr_df$species == "Lucania parva")] <- NA
+subset_tr_df$age_life.span_years[which(subset_tr_df$species == "Atheriniformes")] <- NA
+subset_tr_df$age_life.span_years[which(subset_tr_df$species == "Menidia peninsulae")] <- NA
+subset_tr_df$age_life.span_years[which(subset_tr_df$species == "Fundulus")] <- NA
 subset_tr_df$age_life.span_years[which(subset_tr_df$species == "Chrysiptera brownriggii")] <- NA
 subset_tr_df$age_life.span_years[which(subset_tr_df$species == "Chrysiptera glauca")] <- NA
 subset_tr_df$age_life.span_years[which(subset_tr_df$species == "Chrysiptera notialis")] <- NA
@@ -101,7 +104,7 @@ hist(subset_tr_df2$age_life.span_years, breaks = 50)
 
 
 # MASS:
-hist(subset_tr_df2$mass_adult_g, breaks = 50)
+hist(subset_tr_df2$mass_adult_g, breaks = 100)
 
 # Log transform:
 subset_tr_df2$mass_adult_g <- log10(subset_tr_df2$mass_adult_g +1)
@@ -176,13 +179,13 @@ proj_traits_df$project <- factor(proj_traits_df$project,
 
 # Define colors:
 cols <- c(
-  Coastal_CA = "#0B3C49",
-  SBC = "#2F8F83",
-  FCE = "#3A6F4D",
-  VCR = "#66C2A5",
-  MCR = "#1F78B4",
-  RLS  = "#33A1C9",
-  FISHGLOB = "#4C6A92",
+  Coastal_CA = "#08306B",
+  SBC = "#1B9E77",
+  FCE = "#00441B",
+  VCR = "#40B5C4",
+  MCR = "#2171B5",
+  RLS  = "#6BAED6",
+  FISHGLOB = "#636363",
   SEV = "#C9A227",
   KBS_MAM = "#8B6B3E",
   MOHONK = "#E78AC3",
@@ -195,7 +198,7 @@ body_mass_distrib <- ggplot2::ggplot(proj_traits_df,
                                                   colour = project,
                                                   fill   = project)) +
   ggplot2::geom_density(alpha = 0.5, linewidth = 0.8) +
-  ggplot2::facet_wrap(~ taxa, ncol = 1) +
+  ggplot2::facet_wrap(~ taxa, ncol = 1, scale = "free_y") +
   ggplot2::scale_colour_manual(values = cols, guide = "none") +
   ggplot2::scale_fill_manual(values = cols) +
   ggplot2::labs(
@@ -301,8 +304,231 @@ act_period_distrib <- ggplot2::ggplot(prop_df,
 act_period_distrib
 
 
+# 5 - Explore traits distribution - Focus on fish ==============================
+
+
+# Subset data set for fish:
+fish_proj_traits_df <- dplyr::filter(proj_traits_df,
+                                     taxa == "Fish")
+
+# Set up colors
+cols <- c(
+  Coastal_CA = "#08306B",
+  SBC = "#1B9E77",
+  FCE = "#00441B",
+  VCR = "#40B5C4",
+  MCR = "#2171B5",
+  RLS  = "#6BAED6",
+  FISHGLOB = "#636363")
+
+
+# Body mass:
+# Add the number of values:
+n_df <- fish_proj_traits_df %>%
+  dplyr::filter(!is.na(mass_adult_g)) %>%
+  dplyr::group_by(taxa, project) %>%
+  dplyr::summarise(n = n(), .groups = "drop") %>%
+  dplyr::mutate(label = paste0("n = ", n))
+
+# Get the position to place the labels:
+pos_df <- fish_proj_traits_df %>%
+  dplyr::filter(!is.na(mass_adult_g)) %>%
+  dplyr::group_by(taxa) %>% # Have to group by taxa to get right x pos
+  dplyr::summarise(x = max(mass_adult_g, na.rm = TRUE), y = Inf,
+                   .groups = "drop")
+label_df <- n_df %>%
+  dplyr::left_join(pos_df, by = "taxa")
+
+# Log body mass plot:
+fish_body_mass_distrib <- ggplot2::ggplot(fish_proj_traits_df, 
+                                     ggplot2::aes(x = mass_adult_g,
+                                                  colour = project,
+                                                  fill   = project)) +
+  ggplot2::geom_density(alpha = 0.5, linewidth = 0.8) +
+  ggplot2::facet_wrap(~ project, ncol = 2, scale = "free_y") +
+  ggplot2::geom_text(data = label_df,
+    ggplot2::aes(x = x, y = y, label = label, colour = project),
+    hjust = 1.05, vjust = 1.2, size = 3, show.legend = FALSE) +
+  ggplot2::scale_colour_manual(values = cols, guide = "none") +
+  ggplot2::scale_fill_manual(values = cols) +
+  ggplot2::labs(
+    x = "Adult body mass (log)",
+    y = "Density",
+    fill = "Project") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    strip.background = ggplot2::element_rect(fill = "grey90"),
+    panel.grid.minor = ggplot2::element_blank())
+fish_body_mass_distrib
+
+
+# Life span:
+# Add the number of values:
+n_df <- fish_proj_traits_df %>%
+  dplyr::filter(!is.na(age_life.span_years)) %>%
+  dplyr::group_by(taxa, project) %>%
+  dplyr::summarise(n = n(), .groups = "drop") %>%
+  dplyr::mutate(label = paste0("n = ", n))
+
+# Get the position to place the labels:
+pos_df <- fish_proj_traits_df %>%
+  dplyr::filter(!is.na(age_life.span_years)) %>%
+  dplyr::group_by(taxa) %>%
+  dplyr::summarise(x = max(age_life.span_years, na.rm = TRUE), y = Inf,
+                   .groups = "drop")
+label_df <- n_df %>%
+  dplyr::left_join(pos_df, by = "taxa")
+
+# Log life span plot:
+fish_life_span_distrib <- ggplot2::ggplot(fish_proj_traits_df, 
+                                          ggplot2::aes(x = age_life.span_years,
+                                                       colour = project,
+                                                       fill   = project)) +
+  ggplot2::geom_density(alpha = 0.5, linewidth = 0.8) +
+  ggplot2::facet_wrap(~ project, ncol = 2, scale = "free_y") +
+  ggplot2::geom_text(data = label_df,
+                     ggplot2::aes(x = x, y = y, label = label, colour = project),
+                     hjust = 1.05, vjust = 1.2, size = 3, show.legend = FALSE) +
+  ggplot2::scale_colour_manual(values = cols, guide = "none") +
+  ggplot2::scale_fill_manual(values = cols) +
+  ggplot2::labs(
+    x = "Life Span (log)",
+    y = "Density",
+    fill = "Project") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    strip.background = ggplot2::element_rect(fill = "grey90"),
+    panel.grid.minor = ggplot2::element_blank())
+fish_life_span_distrib
+
+
+# Trophic Level:
+# Add the number of values:
+n_df <- fish_proj_traits_df %>%
+  dplyr::filter(!is.na(diet_trophic.level_num)) %>%
+  dplyr::group_by(taxa, project) %>%
+  dplyr::summarise(n = n(), .groups = "drop") %>%
+  dplyr::mutate(label = paste0("n = ", n))
+
+# Get the position to place the labels:
+pos_df <- fish_proj_traits_df %>%
+  dplyr::filter(!is.na(diet_trophic.level_num)) %>%
+  dplyr::group_by(taxa) %>%
+  dplyr::summarise(x = max(diet_trophic.level_num, na.rm = TRUE), y = Inf,
+                   .groups = "drop")
+label_df <- n_df %>%
+  dplyr::left_join(pos_df, by = "taxa")
+
+# Trophic Level plot:
+fish_trophic_level_distrib <- ggplot2::ggplot(fish_proj_traits_df, 
+                                              ggplot2::aes(x = diet_trophic.level_num,
+                                                           colour = project,
+                                                           fill   = project)) +
+  ggplot2::geom_density(alpha = 0.5, linewidth = 0.8) +
+  ggplot2::facet_wrap(~ project, ncol = 2, scale = "free_y") +
+  ggplot2::geom_text(data = label_df,
+                     ggplot2::aes(x = x, y = y, label = label, colour = project),
+                     hjust = 1.05, vjust = 1.2, size = 3, show.legend = FALSE) +
+  ggplot2::scale_colour_manual(values = cols, guide = "none") +
+  ggplot2::scale_fill_manual(values = cols) +
+  ggplot2::labs(
+    x = "Trophic Level",
+    y = "Density",
+    fill = "Project") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    strip.background = ggplot2::element_rect(fill = "grey90"),
+    panel.grid.minor = ggplot2::element_blank())
+fish_trophic_level_distrib
+
+
+# Reproductive Rate:
+# Add the number of values:
+n_df <- fish_proj_traits_df %>%
+  dplyr::filter(!is.na(reproduction_reproductive.rate_num.offspring.per.year)) %>%
+  dplyr::group_by(taxa, project) %>%
+  dplyr::summarise(n = n(), .groups = "drop") %>%
+  dplyr::mutate(label = paste0("n = ", n))
+
+# Get the position to place the labels:
+pos_df <- fish_proj_traits_df %>%
+  dplyr::filter(!is.na(reproduction_reproductive.rate_num.offspring.per.year)) %>%
+  dplyr::group_by(taxa) %>%
+  dplyr::summarise(x = max(reproduction_reproductive.rate_num.offspring.per.year, na.rm = TRUE), y = Inf,
+                   .groups = "drop")
+label_df <- n_df %>%
+  dplyr::left_join(pos_df, by = "taxa")
+
+#  Reproductive Rate plot:
+fish_reprod_rate_distrib <- ggplot2::ggplot(fish_proj_traits_df, 
+                                            ggplot2::aes(x = reproduction_reproductive.rate_num.offspring.per.year,
+                                                         colour = project,
+                                                         fill   = project)) +
+  ggplot2::geom_density(alpha = 0.5, linewidth = 0.8) +
+  ggplot2::facet_wrap(~ project, ncol = 2, scale = "free_y") +
+  ggplot2::geom_text(data = label_df,
+                     ggplot2::aes(x = x, y = y, label = label, colour = project),
+                     hjust = 1.05, vjust = 1.2, size = 3, show.legend = FALSE) +
+  ggplot2::scale_colour_manual(values = cols, guide = "none") +
+  ggplot2::scale_fill_manual(values = cols) +
+  ggplot2::labs(
+    x = "Reproduction rate (log)",
+    y = "Density",
+    fill = "Project") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    strip.background = ggplot2::element_rect(fill = "grey90"),
+    panel.grid.minor = ggplot2::element_blank())
+fish_reprod_rate_distrib
+
+
+# Active time:
+# Add the number of values:
+n_df <- fish_proj_traits_df %>%
+  dplyr::filter(!is.na(active.time_category_ordinal)) %>%
+  dplyr::group_by(taxa, project) %>%
+  dplyr::summarise(n = n(), .groups = "drop") %>%
+  dplyr::mutate(label = paste0("n = ", n))
+
+# Get the position to place the labels:
+pos_df <- proj_traits_df %>%
+  dplyr::filter(!is.na(active.time_category_ordinal)) %>%
+  dplyr::group_by(taxa) %>%
+  dplyr::summarise(x = max(as.numeric(factor(active.time_category_ordinal))),
+                   y = 1,.groups = "drop")
+label_df <- n_df %>%
+  dplyr::left_join(pos_df, by = "taxa")
+
+# Subset the proportion df:
+fish_prop_df <- dplyr::filter(prop_df,
+                              taxa == "Fish")
+
+# Active period distrib:
+fish_act_period_distrib <- ggplot2::ggplot(fish_prop_df,
+                                      ggplot2::aes(x = active.time_category_ordinal,
+                                                   y = prop,
+                                                   group = project,
+                                                   colour = project)) +
+  ggplot2::geom_line(alpha = 0.8, linewidth = 0.9) +
+  ggplot2::geom_point(size = 2) +
+  ggplot2::geom_text(data = label_df,
+                     ggplot2::aes(x = x, y = y, label = label, colour = project),
+                     hjust = 1.05, vjust = 1.2, size = 3, show.legend = FALSE) +
+  ggplot2::facet_wrap(~ project, ncol = 2) +
+  ggplot2::scale_colour_manual(values = cols, guide = "none") +
+  ggplot2::labs(
+    x = "Activity time category",
+    y = "Proportion of species") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                 axis.text.x = ggplot2::element_text(angle = 45,
+                                                     hjust = 1,
+                                                     vjust = 1,
+                                                     size = 8))
+fish_act_period_distrib
+
+
+
 
 # After:
 # For the functional space, remove reproductive rate (low coverage):
-
-# 4 - Explore traits distribution - Focus on fish ==============================
