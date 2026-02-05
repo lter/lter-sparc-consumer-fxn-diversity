@@ -64,15 +64,20 @@ class(subset_tr_df$age_life.span_years)
 class(subset_tr_df$mass_adult_g)
 class(subset_tr_df$diet_trophic.level_num)
 
-# Order the Active time categories:
+# Order and create the Active time categories:
+subset_tr_df <- subset_tr_df %>% 
+  dplyr::mutate(active.time_category_new = case_when(
+    active.time_category_ordinal == "diurnal" ~ "diurnal",
+    active.time_category_ordinal == "nocturnal" ~ "nocturnal",
+    ! active.time_category_ordinal %in% c("diurnal", "nocturnal", "") ~ "cathemeral")) %>% 
+  dplyr::select(-c(active.time_category_ordinal)) %>% 
+  dplyr::rename(active.time_category_ordinal = active.time_category_new)
+
 class(subset_tr_df$active.time_category_ordinal)
 levels(subset_tr_df$active.time_category_ordinal)
 unique(subset_tr_df$active.time_category_ordinal)
-# Correct "" to NA:
-subset_tr_df$active.time_category_ordinal[which(subset_tr_df$active.time_category_ordinal == "")] <- NA
-unique(subset_tr_df$active.time_category_ordinal)
 # Categorise:
-subset_tr_df$active.time_category_ordinal <- as.factor(subset_tr_df$active.time_category_ordinal)
+subset_tr_df$active.time_category_ordinal <- factor(subset_tr_df$active.time_category_ordinal)
 
 
 # ----
