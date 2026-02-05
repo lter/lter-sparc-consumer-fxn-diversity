@@ -16,7 +16,7 @@ nacheck <- function(df) {
       na_count_per_column <- sapply(df, function(x) sum(is.na(x)))
       print(na_count_per_column)
 }
-
+### re-read from step 000 - cna update
 dat <- read_csv('04_harmonized_consumer_excretion_sparc_cnd_site.csv')
 glimpse(dat)
 nacheck(dat)
@@ -260,9 +260,7 @@ dt_total |>
                   project == 'PISCO_C' ~ subsite_level2,
                   project == 'PISCO_S' ~ subsite_level2,
                   project == 'FISHGLOB' ~ site,
-                  project == 'RLS' ~ site,
-                  
-            )
+                  project == 'RLS' ~ site)
       ) |> 
       group_by(project, system, year) |> 
       summarize(
@@ -271,11 +269,11 @@ dt_total |>
             .groups = 'drop'
       ) |> 
       # filter(mean < 25000) |>
-      filter(!project == 'CCE' | mean <= 1000) |>
-      filter(!project == 'NorthLakes' | mean <= 2000) |>
-      filter(!project == 'PISCO_S' | mean <= 15000) |>
-      filter(!project == 'SBC' | mean <= 20000) |>
-      filter(!project == 'VCR' | mean <= 1000) |>
+      # filter(!project == 'CCE' | mean <= 1000) |>
+      # filter(!project == 'NorthLakes' | mean <= 2000) |>
+      # filter(!project == 'PISCO_S' | mean <= 15000) |>
+      # filter(!project == 'SBC' | mean <= 20000) |>
+      # filter(!project == 'VCR' | mean <= 1000) |>
       ggplot(aes(x = year, y = mean, fill = system, color = system, group = system)) + 
       geom_jitter(aes(fill = system), shape = 21, width = 0.3,
                   color ='black', size = 2, stroke = 1, alpha = 0.6) +
@@ -320,7 +318,7 @@ system_m <- dt_total |>
                   project == 'PISCO_C' ~ subsite_level2,
                   project == 'PISCO_S' ~ subsite_level2,
                   project == 'FISHGLOB' ~ site,
-                  project == 'RLS' ~ site,
+                  project == 'RLS' ~ paste(site, subsite_level1, sep = ''),
                   
             )
       ) |> 
@@ -340,8 +338,16 @@ test
 # 3. Palmer estimates exist for N cycling, but appear to be crazy low
 # 4. Appears that estimates for RLS and maybe FISHGLOB are not at the m2 resolution?
 
-test <- dat |> 
+test1 <- dat |> 
       filter(project == 'Arctic') |> 
       select(scientific_name) |> 
       distinct()
-test
+test1
+
+test2 <- dat |> 
+      filter(project == 'FCE')
+nacheck(test2)
+
+test3 <- dat |> 
+      filter(project == 'RLS')
+nacheck(test3)
