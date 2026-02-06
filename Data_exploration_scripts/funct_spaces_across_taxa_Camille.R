@@ -435,6 +435,49 @@ fctsp_hull_act
 
 ## Do functional space highlighting taxa:
 
+# Compute the range of functional axes:
+range_sp_coord  <- range(sp_faxes_coord_all)
+
+# Based on the range of species coordinates values, compute a nice range ...
+# ... for functional axes:
+range_faxes <- range_sp_coord +
+  c(-1, 1) * (range_sp_coord[2] - range_sp_coord[1]) * 0.05
+range_faxes
+
+
+# get species coordinates along the two studied axes:
+sp_faxes_coord_xy <- sp_faxes_coord_all[, c("PC1", "PC2")]
+
+# Plot background with grey backrgound:
+plot_k <- mFD::background.plot(range_faxes = range_faxes,
+                               faxes_nm = c("PC1", "PC2"),
+                               color_bg = "grey98")
+plot_k
+
+
+# Retrieve vertices coordinates along the two studied functional axes:
+vert <- mFD::vertices(sp_faxes_coord = sp_faxes_coord_xy,
+                      order_2D = FALSE,
+                      check_input = TRUE)
+
+plot_k <- mFD::pool.plot(ggplot_bg = plot_k,
+                         sp_coord2D = sp_faxes_coord_xy,
+                         vertices_nD = vert,
+                         plot_pool = FALSE,
+                         color_pool = NA,
+                         fill_pool = NA,
+                         alpha_ch =  0.8,
+                         color_ch = "white",
+                         fill_ch = "white",
+                         shape_pool = NA,
+                         size_pool = NA,
+                         shape_vert = NA,
+                         size_vert = NA,
+                         color_vert = NA,
+                         fill_vert = NA)
+plot_k
+
+# Build an asb df with taxa:
 asb_sp_taxa_df <- proj_traits_noNA_df %>%
   dplyr::select(c("species", "taxa")) %>% 
   dplyr::mutate(value = 1) %>%
@@ -526,8 +569,263 @@ fctsp_hull_all <- mFD::fric.plot(ggplot_bg = plot_k,
 fctsp_hull_all
 
 
+# -----
+
+## Highlight mammals assemblages in the functional space:
+
+
+# Compute the range of functional axes:
+range_sp_coord  <- range(sp_faxes_coord_all)
+
+# Based on the range of species coordinates values, compute a nice range ...
+# ... for functional axes:
+range_faxes <- range_sp_coord +
+  c(-1, 1) * (range_sp_coord[2] - range_sp_coord[1]) * 0.05
+range_faxes
+
+
+# get species coordinates along the two studied axes:
+sp_faxes_coord_xy <- sp_faxes_coord_all[, c("PC1", "PC2")]
+
+# Plot background with grey backrgound:
+plot_k <- mFD::background.plot(range_faxes = range_faxes,
+                               faxes_nm = c("PC1", "PC2"),
+                               color_bg = "grey98")
+plot_k
+
+
+# Retrieve vertices coordinates along the two studied functional axes:
+vert <- mFD::vertices(sp_faxes_coord = sp_faxes_coord_xy,
+                      order_2D = FALSE,
+                      check_input = TRUE)
+
+plot_k <- mFD::pool.plot(ggplot_bg = plot_k,
+                         sp_coord2D = sp_faxes_coord_xy,
+                         vertices_nD = vert,
+                         plot_pool = FALSE,
+                         color_pool = NA,
+                         fill_pool = NA,
+                         alpha_ch =  0.8,
+                         color_ch = "white",
+                         fill_ch = "white",
+                         shape_pool = NA,
+                         size_pool = NA,
+                         shape_vert = NA,
+                         size_vert = NA,
+                         color_vert = NA,
+                         fill_vert = NA)
+plot_k
+
+
+# Do an asb df for mammals asb vs others:
+asb_sp_mam_df <- proj_traits_noNA_df %>%
+  dplyr::select(c("species", "project")) %>% 
+  dplyr::mutate(mamm_asb = case_when(
+    project == "SEV" ~ "SEV",
+    project == "KBS_MAM" ~ "KBS_MAM",
+    ! project %in% c("SEV", "KBS") ~ "Other")) %>% 
+  dplyr::select(-c("project")) %>% 
+  dplyr::mutate(value = 1) %>%
+  dplyr::distinct() %>% 
+  tidyr::pivot_wider(names_from  = species, values_from = value, 
+                     values_fill = 0) %>% 
+  tibble::column_to_rownames(var = "mamm_asb")
+
+# SEV:
+## filter SEV species:
+sp_filter_SEV <- mFD::sp.filter(asb_nm = c("SEV"),
+                                 sp_faxes_coord = sp_faxes_coord_xy,
+                                 asb_sp_w = asb_sp_mam_df)
+## get species coordinates:
+sp_faxes_coord_SEV <- sp_filter_SEV$`species coordinates`
+
+# KBS_MAM:
+## filter KBS_MAM species:
+sp_filter_KBS <- mFD::sp.filter(asb_nm = c("KBS_MAM"),
+                                 sp_faxes_coord = sp_faxes_coord_xy,
+                                 asb_sp_w = asb_sp_mam_df)
+## get species coordinates:
+sp_faxes_coord_KBS <- sp_filter_KBS$`species coordinates`
+
+# Others:
+## filter Other species:
+sp_filter_other <- mFD::sp.filter(asb_nm = c("Other"),
+                                sp_faxes_coord = sp_faxes_coord_xy,
+                                asb_sp_w = asb_sp_mam_df)
+## get species coordinates:
+sp_faxes_coord_other <- sp_filter_other$`species coordinates`
+
+
+# Retrieve names of sp being vertices:
+# SEV:
+vert_nm_SEV <- mFD::vertices(sp_faxes_coord = sp_faxes_coord_SEV,
+                              order_2D = TRUE,
+                              check_input = TRUE)
+# KBS:
+vert_nm_KBS <- mFD::vertices(sp_faxes_coord = sp_faxes_coord_KBS,
+                              order_2D = TRUE,
+                              check_input = TRUE)
+# Others:
+vert_nm_other <- mFD::vertices(sp_faxes_coord = sp_faxes_coord_other,
+                             order_2D = TRUE,
+                             check_input = TRUE)
+
+
+# Add the convex hulls:
+fctsp_hull_mamm1 <- mFD::fric.plot(ggplot_bg = plot_k,
+                                 asb_sp_coord2D = list("Other" = sp_faxes_coord_other),
+                                 asb_vertices_nD = list("Other" = vert_nm_other),
+                                 plot_sp = TRUE,
+                                 color_ch = NA,
+                                 fill_ch = c("Other" = "grey85"),
+                                 alpha_ch = c("Other" = 0.4),
+                                 shape_sp = c("Other" = 16),
+                                 size_sp = c("Other" = 0.2),
+                                 color_sp = c("Other" = "grey85"),
+                                 fill_sp = c("Other" = "grey85"),
+                                 shape_vert = c("Other" = 16),
+                                 size_vert = c("Other" = 0.2),
+                                 color_vert = c("Other" = "grey85"),
+                                 fill_vert = c("Other" = "grey85"))
+fctsp_hull_mamm1
+
+fctsp_hull_mamm2 <- mFD::fric.plot(ggplot_bg = fctsp_hull_mamm1,
+                                   asb_sp_coord2D = list("SEV" = sp_faxes_coord_SEV,
+                                                         "KBS" = sp_faxes_coord_KBS),
+                                   asb_vertices_nD = list("SEV" = vert_nm_SEV,
+                                                          "KBS" = vert_nm_KBS),
+                                   plot_sp = TRUE,
+                                   color_ch = NA,
+                                   fill_ch = c("SEV" = "#C9A227",
+                                               "KBS" = "#8B6B3E"),
+                                   alpha_ch = c("SEV" = 0.5,
+                                                "KBS" = 0.5),
+                                   shape_sp = c("SEV" = 16,
+                                                 "KBS" = 16),
+                                   size_sp = c("SEV" = 0.6,
+                                               "KBS" = 0.6),
+                                   color_sp = c("SEV" = "#C9A227",
+                                                "KBS" = "#8B6B3E"),
+                                   fill_sp = c("SEV" = "#C9A227",
+                                               "KBS" = "#8B6B3E"),
+                                   shape_vert = c("SEV" = 16,
+                                                  "KBS" = 16),
+                                   size_vert = c("SEV" = 0.6,
+                                                 "KBS" = 0.6),
+                                   color_vert = c("SEV" = "#C9A227",
+                                                  "KBS" = "#8B6B3E"),
+                                   fill_vert = c("SEV" = "#C9A227",
+                                                 "KBS" = "#8B6B3E"))
+fctsp_hull_mamm2
 
 
 # 7 - Build functional space for mammal species ===========================
 
+
+# Subset the asb and traits df to mammals:
+asb_sp_mam_df <- asb_sp_df %>% 
+  dplyr::filter(rownames(asb_sp_df) %in% c("SEV", "KBS_MAM"))
+asb_sp_mam_df <- asb_sp_mam_df %>% 
+  dplyr::select(which(!colSums(asb_sp_mam_df, na.rm=TRUE) %in% 0))
+
+sp_tr_mam_df <- sp_tr_df %>% 
+  dplyr::filter(rownames(sp_tr_df) %in% colnames(asb_sp_mam_df))
+
+# Compute functional distance:
+sp_dist_mamm <- mFD::funct.dist(
+  sp_tr         = sp_tr_mam_df,
+  tr_cat        = tr_cat_df,
+  metric        = "gower",
+  scale_euclid  = "scale_center",
+  ordinal_var   = "classic",
+  weight_type   = "equal",
+  stop_if_NA    = TRUE)
+dist_df <- mFD::dist.to.df(list("df" = sp_dist_all))
+
+# Build functional space - check quality dimensions:
+fspaces_quality_mamm <- mFD::quality.fspaces(
+  sp_dist             = sp_dist_mamm,
+  maxdim_pcoa         = 10,
+  deviation_weighting = "absolute",
+  fdist_scaling       = FALSE,
+  fdendro             = "average")
+mFD::quality.fspaces.plot(
+  fspaces_quality            = fspaces_quality_mamm,
+  quality_metric             = "mad",
+  fspaces_plot               = c("tree_average", "pcoa_2d", "pcoa_3d", 
+                                 "pcoa_4d"))
+
+# Get species coordinates:
+sp_faxes_coord_mamm <- fspaces_quality_mamm$"details_fspaces"$"sp_pc_coord"
+
+
+# Get link between axes and traits:
+mamm_tr_faxes <- mFD::traits.faxes.cor(
+  sp_tr          = sp_tr_mam_df, 
+  sp_faxes_coord = sp_faxes_coord_mamm[ , c("PC1", "PC2", "PC3", "PC4")], 
+  plot           = TRUE)
+mamm_tr_faxes
+
+# Plot functional space:
+fctsp_mamm <- mFD::funct.space.plot(
+  sp_faxes_coord  = sp_faxes_coord_mamm[ , c("PC1", "PC2", "PC3", "PC4")],
+  faxes           = c("PC1", "PC2", "PC3", "PC4"),
+  name_file       = NULL,
+  faxes_nm        = NULL,
+  range_faxes     = c(NA, NA),
+  color_bg        = "grey95",
+  color_pool      = "#53868B",
+  fill_pool       = "white",
+  shape_pool      = 21,
+  size_pool       = 1,
+  plot_ch         = TRUE,
+  color_ch        = "#EEAD0E",
+  fill_ch         = "white",
+  alpha_ch        = 0.5,
+  plot_vertices   = TRUE,
+  color_vert      = "#EEAD0E",
+  fill_vert       = "#EEAD0E",
+  shape_vert      = 23,
+  size_vert       = 1,
+  plot_sp_nm      = NULL,
+  nm_size         = 3,
+  nm_color        = "black",
+  nm_fontface     = "plain",
+  check_input     = TRUE)
+fctsp_mamm
+
+
+# Plot the two asb:
+# First compute fric:
+fric_mamm <- mFD::alpha.fd.multidim(
+  sp_faxes_coord   = sp_faxes_coord_mamm[ , c("PC1", "PC2", "PC3", "PC4")],
+  asb_sp_w         = as.matrix(asb_sp_mam_df),
+  ind_vect         = c("fric"),
+  scaling          = TRUE,
+  check_input      = TRUE,
+  details_returned = TRUE)
+
+plots_fric_mamm <- mFD::alpha.multidim.plot(
+  output_alpha_fd_multidim = fric_mamm,
+  plot_asb_nm              = c("SEV", "KBS_MAM"),
+  ind_nm                   = c("fric"),
+  faxes                    = NULL,
+  faxes_nm                 = NULL,
+  range_faxes              = c(NA, NA),
+  color_bg                 = "grey95",
+  shape_sp                 = c(pool = 3, asb1 = 21, asb2 = 21),
+  size_sp                  = c(pool = 0.7, asb1 = 1, asb2 = 1),
+  color_sp                 = c(pool = "grey50", asb1 = "#C9A227", asb2 = "#8B6B3E"),
+  color_vert               = c(pool = "grey50", asb1 = "#C9A227", asb2 = "#8B6B3E"),
+  fill_sp                  = c(pool = NA, asb1 = "#C9A227", asb2 = "#8B6B3E"),
+  fill_vert                = c(pool = NA, asb1 = "#C9A227", asb2 = "#8B6B3E"),
+  color_ch                 = c(pool = NA, asb1 = "#C9A227", asb2 = "#8B6B3E"),
+  fill_ch                  = c(pool = "white", asb1 = "#C9A227", asb2 = "#8B6B3E"),
+  alpha_ch                 = c(pool = 1, asb1 = 0.3, asb2 = 0.3),
+  size_sp_nm               = 3, 
+  color_sp_nm              = "black",
+  plot_sp_nm               = NULL,
+  fontface_sp_nm           = "plain",
+  save_file                = FALSE,
+  check_input              = TRUE) 
 
