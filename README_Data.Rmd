@@ -1,0 +1,36 @@
+---
+title: "README_Data"
+output: html_document
+---
+
+This file explain the archtecture and files in the `Data` folder. The `Data` folder contains two types of folders: **raw-data** folders which you (as a consortium member) are not expected to use, and **tidy-data** folders which contains data you can use. Below is the description of these folders.
+
+The **species-tidy-data** folder contains:
+
+- `21_species_harmonized.csv`: output of the harmonisation process. You are **not** expected to use this file.
+- `22_species_wrangled.csv`: output of the wrangling process. You are **not** expected to use this file. 
+- `22_species_ITIS_taxonomy.csv`: taxonomy information retrieved on ITIS for most of our species of interest. 
+- `23_species_master-spp-list.csv`: project, habitat, and taxonomic information for all our study species.
+
+
+The **community-tidy-data** folder contains:
+
+- `01_community_harmonized.csv`: output of the harmonisation process. You are **not** expected to use this file.
+- `02_community_wrangled.csv`: output of the wrangling process. You are **not** expected to use this file. 
+- `02_zoo_taxa_checked.csv`: taxonomic data checked (ask Shalanda: difference with the ITIS file in the species-tidy-data folder) 
+- `03_harmonized_consumer_excretion_sparcsite.csv`: information at the site/subsite levels about zooplankton data collected (ask Mack/Shalanda for more info *to be completed*)
+- `04_harmonized_consumer_excretion_sparc_cnd_site.csv`: information at the site/subsite levels about zooplankton data collected (ask Mack/Shalanda for more info - not sure how it differs from file 03 *to be completed*)
+
+
+The **traits-tidy-data** folder contains:
+
+- `11_traits_harmonized.csv`: output of the harmonisation process. You are **not** expected to use this file.
+- `12_traits_wrangled.csv`: output of the wrangling process. You are **not** expected to use this file. 
+- `consumer-trait-species-imputed-taxon.csv`: traits data which have been imputed based on taxonomy up to the order.
+- `Functional_trait_database.csv`: traits data with no imputation. 
+
+
+The **environmental-tidy-data** folder contains:
+
+- *to be completed*
+
