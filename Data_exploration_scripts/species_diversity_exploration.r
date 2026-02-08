@@ -23,8 +23,8 @@ rm(list = ls()); gc()
 comm_data_aquatic <- read.csv(file.path("Data", "community_tidy-data", "04_harmonized_consumer_excretion_sparc_cnd_site.csv"))
 species_data <- read.csv(file.path("Data", "species_tidy-data", "23_species_master-spp-list.csv"))
 ##### Quick Data Explore #####
-glimpse(comm_data)
-unique(comm_data$project) #12 projects 
+glimpse(comm_data_aquatic)
+unique(comm_data_aquatic$project) #12 projects 
 unique(species_data$project) #22 projects
 
 #### ADD COLORS #####
@@ -81,7 +81,8 @@ species_richness_program <- species_data_sub %>%
   summarise(species_richness_total =  n_distinct(scientific_name))
 
 species_richness_program %>%
-  filter(proj_taxa %in% c("Amphibians", "Mammals")) %>%
+  mutate(project = as.factor(project)) %>%
+  #filter(proj_taxa %in% c("Amphibians", "Mammals")) %>%
   ggplot(aes(x = project, y = species_richness_total, color = project, fill = project)) +
   geom_col(alpha = 0.5) +
   scale_fill_manual(values = cols, guide = "none") +
@@ -101,6 +102,20 @@ species_richness_total_withab <- comm_data_aquatic %>%
 
 species_richness_program
 species_richness_total_withab
+
+# these do not match, haha. using species_richness_total_withab for fish
+
+species_richness_total_withab %>%
+  mutate(project = as.factor(project)) %>%
+  filter(habitat != "beach") %>%
+  filter(project != "NGA") %>%
+  #filter(proj_taxa %in% c("Amphibians", "Mammals")) %>%
+  ggplot(aes(x = project, y = species_richness, color = project, fill = project)) +
+  geom_col(alpha = 0.5) +
+  scale_fill_manual(values = cols, guide = "none") +
+  scale_color_manual(values = cols, guide = "none") +
+  ggplot2::theme_classic() +
+  labs(x = "Project", y = "Total Species Richness") 
 
 #####  Species Richness at Site Level - Through Time #####
 
