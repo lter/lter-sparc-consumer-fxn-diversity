@@ -17,7 +17,7 @@ nacheck <- function(df) {
       print(na_count_per_column)
 }
 
-# 1) Read species list (Aves) ---------------------------------------------
+# Read species list (Aves) ---------------------------------------------
 dat <- readr::read_csv('../Collaborative/FnxSynthBase/23_species_master-spp-list.csv') |>
       filter(class == "Aves")
 
@@ -25,12 +25,12 @@ glimpse(dat)
 nacheck(dat)
 unique(dat$project)
 
-# 2) Read imputed trait database ------------------------------------------
+# Read imputed trait database ------------------------------------------
 dat1 <- readr::read_csv('../Collaborative/FnxSynthBase/consumer-trait-species-imputed-taxonmic-database.csv')
 glimpse(dat1)
 unique(dat1$family)
 
-# 3) Join species list to imputed DB + keep first row per species ----------
+# Join species list to imputed DB + keep first row per species ----------
 dat1.2 <- dat |>
       left_join(dat1) |>  # assumes same column name in both
       dplyr::select(
@@ -47,7 +47,7 @@ dat1.2 <- dat |>
 glimpse(dat1.2)
 nacheck(dat1.2)
 
-# 4) Read BirdFuncDatExcel traits + recode + keep first row per species ----
+# Read BirdFuncDatExcel traits + recode + keep first row per species ----
 traits <- readxl::read_xlsx('../Collaborative/FnxSynthBase/BirdFuncDatExcel.xlsx') |>
       select(Scientific, `Diet-5Cat`, Nocturnal, `BodyMass-Value`) |>
       rename(
@@ -80,7 +80,6 @@ traits <- readxl::read_xlsx('../Collaborative/FnxSynthBase/BirdFuncDatExcel.xlsx
 glimpse(traits)
 unique(traits$diet_cat)
 nacheck(traits)
-
 
 # NA-fill possible columns -----------------------------------------
 cols_to_fill <- c("mass_adult_g", "diet_trophic.level_num", "active.time_category_ordinal")
