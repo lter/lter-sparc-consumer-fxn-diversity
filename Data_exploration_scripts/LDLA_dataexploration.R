@@ -138,11 +138,18 @@ all_traits <- program_sp_trt_data %>%
                 "reproduction_reproductive.rate_num.offspring.per.year",
                 "mass_adult_g",
                 "active.time_category_ordinal", "taxa")) %>%
-  group_by(project) %>% mutate(tr.age.zp = scale(age_life.span_years)[,1],
+  group_by(project) %>% 
+  mutate(tr.age.zp = scale(age_life.span_years)[,1],
                                tr.trophic.level.zp = scale(diet_trophic.level_num)[,1],
                                tr.reproductive.rate.zp = scale(reproduction_reproductive.rate_num.offspring.per.year)[,1],
                                tr.mass.adult.zp = scale(log(mass_adult_g, 10))[,1]
-                               )
+                               ) %>%
+  ungroup() %>% group_by(taxa) %>%
+  mutate(tr.age.tp = scale(age_life.span_years)[,1],
+         tr.trophic.level.tp = scale(diet_trophic.level_num)[,1],
+         tr.reproductive.rate.tp = scale(reproduction_reproductive.rate_num.offspring.per.year)[,1],
+         tr.mass.adult.tp = scale(log(mass_adult_g, 10))[,1]
+  )
 
 # Order and create the Active time categories:
 all_traits1 <- all_traits %>% 
