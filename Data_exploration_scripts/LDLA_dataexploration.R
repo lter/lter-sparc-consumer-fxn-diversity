@@ -296,6 +296,11 @@ taxa.df <- onlytraits.nat %>% mutate(scientific.name = rownames(.)) %>%
 
 
 
+
+
+
+####### OLD CODE ###############
+
 # -----
 
 ## Do functional space, highligthing activity convex hull:
