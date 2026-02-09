@@ -285,13 +285,21 @@ fctsp_all
 # ----- Reattach metadata to ordination space dataframe ---------
 
 sp.faxes <- data.frame(sp_faxes_coord_all) %>% mutate(scientific.name=rownames(.))
+all.traits.final.forjoin <- all_traits.final %>% select(-starts_with("tr."))
 
 taxa.df <- onlytraits.nat %>% mutate(scientific.name = rownames(.)) %>% 
-  left_join(all_traits.final, by=c("scientific.name"="scientific_name")) %>%
+  left_join(all.traits.final.forjoin, by=c("scientific.name"="scientific_name")) %>%
   left_join(sp.faxes)
 
 
 
+# -------- Visualization of Ordinations -----------------
+
+ggplot(taxa.df, aes(x=PC1, PC2, col=project)) + geom_point() + facet_wrap(~taxa)+ theme_classic() 
+
+ggplot(taxa.df, aes(x=tr.mass.adult.zp, y=tr.reproductive.rate.zp, col=taxa)) + geom_point()
+
+#---------- 
 
 
 
