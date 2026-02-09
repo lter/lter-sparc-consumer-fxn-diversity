@@ -88,7 +88,9 @@ spp_v4 <- spp_v3 |>
   dplyr::rename(scientific_name = sci, 
     specific_epithet = species) |> 
   # Keep only unique rows
-  dplyr::distinct()
+  dplyr::distinct() |>
+  # remove the homo sapiens from the sbc beach data
+  dplyr::filter(!scientific_name %in% c("Homo sapiens"))
 
 # Check structure
 dplyr::glimpse(spp_v4)
