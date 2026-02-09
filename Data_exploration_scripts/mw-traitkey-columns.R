@@ -27,6 +27,11 @@ trait2 <- read_csv('../../../../../../Downloads/ATraiU_summary_values_2020AUG.cs
 glimpse(trait2)
 nacheck(trait2)
 
+trait3 <- read_csv('../Collaborative/FnxSynthBase/BirdFuncDat.csv')
+glimpse(trait3)
+nacheck(trait3)
+
+
 tidynames <- read_csv('../../../../../../Downloads/tidynames.csv')
 
 # first trait database ----------------------------------------------------
@@ -183,3 +188,73 @@ writexl::write_xlsx(trait_df2, '../../../../../../Downloads/atraiu-datakey-clean
 all_traits <- rbind(trait_df1, trait_df2)
 glimpse(all_traits)
 writexl::write_xlsx(all_traits, '../../../../../../Downloads/mwhite-datakey-traits-clean.xlsx')
+
+# third trait database ---------------------------------------------------
+unique(trait_df2$raw_name)
+trait_df2 <- tibble(raw_name = names(trait2)) |> 
+      mutate(column = row_number()) |> 
+      select(column, raw_name) |> 
+      mutate(
+            trait_database = "ATraiU",
+            data_type = 'trait',
+            source = 'ATraiU_summary_values_2020AUG.csv',
+            tidy_name = NA_character_,
+            units = NA_character_,
+            na_indicator = "NA",
+            trait_values = NA_character_,
+            notes = NA_character_
+      ) |> 
+      mutate(tidy_name = case_when(
+            raw_name == "family" ~ "family",
+            raw_name == "max.max_length_mm_fem" ~ "max_length_female",
+            raw_name == "max.max_length_mm_male" ~ "max_length_male",
+            raw_name == "latin_name" ~ "taxon",
+            raw_name == "max.longevity_max_yrs" ~ "life_span",
+            raw_name == "max.egg_size_mm" ~ "offspring_length",
+            raw_name == "mn.hatch_size_mm" ~ 'offspring_length',
+            raw_name == "min.maturity_min_yrs_fem" ~ "age_maturity_female",
+            raw_name == "min.maturity_min_yrs_male" ~ "age_maturity_male",
+            TRUE ~ NA_character_
+      )) |> 
+      mutate(units = case_when(
+            raw_name == "family" ~ "character",
+            raw_name == "max.max_length_mm_fem" ~ "mm",
+            raw_name == "max.max_length_mm_male" ~ "mm",
+            raw_name == "latin_name" ~ "character",
+            raw_name == "max.longevity_max_yrs" ~ "yrs",
+            raw_name == "max.egg_size_mm" ~ "mm",
+            raw_name == "mn.hatch_size_mm" ~ 'mm',
+            raw_name == "min.maturity_min_yrs_fem" ~ "yrs",
+            raw_name == "min.maturity_min_yrs_male" ~ "yrs",
+            TRUE ~ NA_character_
+      )) |> 
+      # mutate(trait_values = case_when(
+      # raw_name == "family" ~ "family",
+      # raw_name == "max.max_length_mm_fem" ~ "max_length_female",
+      # raw_name == "max.max_length_mm_male" ~ "max_length_male",
+      # raw_name == "latin_name" ~ "taxon",
+      # raw_name == "max.longevity_max_yrs" ~ "life_span",
+      # raw_name == "max.egg_size_mm" ~ "offspring_length",
+      # raw_name == "mn.hatch_size_mm" ~ 'offspring_length',
+      # raw_name == "min.maturity_min_yrs_fem" ~ "age_maturity_female",
+      # raw_name == "min.maturity_min_yrs_male" ~ "age_maturity_male",
+      # TRUE ~ NA_character_
+      # )) |> 
+      mutate(notes = case_when(
+            raw_name == "family" ~ "family",
+            raw_name == "max.max_length_mm_fem" ~ "I noticed there was male and female tidy names for mass, but length so I created a new column - hope that is alright!",
+            raw_name == "max.max_length_mm_male" ~ "I noticed there was male and female tidy names for mass, but length so I created a new column - hope that is alright!",
+            raw_name == "latin_name" ~ "taxon",
+            raw_name == "max.longevity_max_yrs" ~ "life_span",
+            raw_name == "max.egg_size_mm" ~ "offspring_length",
+            raw_name == "mn.hatch_size_mm" ~ 'offspring_length',
+            raw_name == "min.maturity_min_yrs_fem" ~ "Similar to length here, maturity was reported for both male and female so created new tidy name for column - maybe we can just average it all out?",
+            raw_name == "min.maturity_min_yrs_male" ~ "Similar to length here, maturity was reported for both male and female so created new tidy name for column - maybe we can just average it all out?",
+            TRUE ~ NA_character_
+      )) |> 
+      select(trait_database, data_type, source, column, raw_name, tidy_name, units,
+             na_indicator, trait_values, notes)
+
+glimpse(trait_df2)
+head(trait_df2)
+writexl::write_xlsx(trait_df2, '../../../../../../Downloads/atraiu-datakey-clean.xlsx')
