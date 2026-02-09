@@ -138,10 +138,11 @@ all_traits <- program_sp_trt_data %>%
                 "reproduction_reproductive.rate_num.offspring.per.year",
                 "mass_adult_g",
                 "active.time_category_ordinal", "taxa")) %>%
-  group_by(project) %>% mutate(tr.age.zp = scale(age_life.span_years),
-                               tr.trophic.level.zp = scale(diet_trophic.level_num),
-                               tr.reproductive.rate.zp = scale(reproduction_reproductive.rate_num.offspring.per.year),
-                               tr.mass.adult.zp = scale(log(mass_adult_g, 10)))
+  group_by(project) %>% mutate(tr.age.zp = scale(age_life.span_years)[,1],
+                               tr.trophic.level.zp = scale(diet_trophic.level_num)[,1],
+                               tr.reproductive.rate.zp = scale(reproduction_reproductive.rate_num.offspring.per.year)[,1],
+                               tr.mass.adult.zp = scale(log(mass_adult_g, 10))[,1]
+                               )
 
 # Order and create the Active time categories:
 all_traits1 <- all_traits %>% 
@@ -164,24 +165,37 @@ all_traits.final <- all_traits.verts %>% filter(n_nas < 3)
 
 
 
-onlytraits <- as.data.frame(all_traits.final %>% ungroup() %>% select(starts_with("tr.")) %>% mutate(tr.active.time=as.ordered(tr.active.time)))
+onlytraits <- data.frame(all_traits.final %>% ungroup() %>% select(starts_with("tr.")) %>% mutate(tr.active.time=as.factor(tr.active.time)))
+
 
 rownames(onlytraits) <- all_traits.final$scientific_name
+#colnames(onlytraits) <- c("tr.age.zp", "tr.trophic.level.zp", "tr.reproductive.rate.zp", "tr.mass.adult.zp", "tr.active.time" )
+
+onlytraits.nat <- onlytraits %>% select(-tr.active.time)
 
 
 # Build a dataframe gathering traits categories:
 tr_nm <- colnames(onlytraits)
-tr_cat <- c("Q", "Q", "Q","Q","O")
+tr_cat <- c("Q", "Q", "Q","Q","N")
 tr_cat_df <- as.data.frame(matrix(ncol = 2, nrow = 5))
 tr_cat_df[, 1] <- tr_nm
 tr_cat_df[, 2] <- tr_cat
 colnames(tr_cat_df) <- c("trait_name", "trait_type")
 
+# NO ACTIVE TIME Build a dataframe gathering traits categories:
+tr_nm <- colnames(onlytraits.nat)
+tr_cat <- c("Q", "Q", "Q","Q")
+tr_cat_df <- as.data.frame(matrix(ncol = 2, nrow = 4))
+tr_cat_df[, 1] <- tr_nm
+tr_cat_df[, 2] <- tr_cat
+colnames(tr_cat_df) <- c("trait_name", "trait_type")
+
+
 
 # Explore traits repartition:
 traits_summ <- mFD::sp.tr.summary(
   tr_cat     = tr_cat_df,   
-  sp_tr      = onlytraits, 
+  sp_tr      = onlytraits.nat, 
   stop_if_NA = FALSE)
 traits_summ$tr_summary_list
 
@@ -204,7 +218,7 @@ traits_summ$tr_summary_list
 
 # Compute functional distance:
 sp_dist_all <- mFD::funct.dist(
-  sp_tr         = onlytraits,
+  sp_tr         = onlytraits.nat,
   tr_cat        = tr_cat_df,
   metric        = "gower",
   scale_euclid  = "noscale",
@@ -232,15 +246,16 @@ sp_faxes_coord_all <- fspaces_quality_all$"details_fspaces"$"sp_pc_coord"
 
 # Get link between axes and traits:
 all_tr_faxes <- mFD::traits.faxes.cor(
-  sp_tr          = sp_tr_df, 
-  sp_faxes_coord = sp_faxes_coord_all[ , c("PC1", "PC2", "PC3", "PC4")], 
-  plot           = TRUE)
+  sp_tr          = onlytraits.nat, 
+  sp_faxes_coord = sp_faxes_coord_all[ , c("PC1", "PC2", "PC3")], 
+  plot           = TRUE, 
+  stop_if_NA = FALSE)
 all_tr_faxes
 
 # Plot functional space:
 fctsp_all <- mFD::funct.space.plot(
-  sp_faxes_coord  = sp_faxes_coord_all[ , c("PC1", "PC2", "PC3", "PC4")],
-  faxes           = c("PC1", "PC2", "PC3", "PC4"),
+  sp_faxes_coord  = sp_faxes_coord_all[ , c("PC1", "PC2", "PC3")],
+  faxes           = c("PC1", "PC2", "PC3"),
   name_file       = NULL,
   faxes_nm        = NULL,
   range_faxes     = c(NA, NA),
@@ -264,6 +279,21 @@ fctsp_all <- mFD::funct.space.plot(
   nm_fontface     = "plain",
   check_input     = TRUE)
 fctsp_all
+
+
+
+# ----- Reattach metadata to ordination space dataframe ---------
+
+sp.faxes <- data.frame(sp_faxes_coord_all) %>% mutate(scientific.name=rownames(.))
+
+taxa.df <- onlytraits.nat %>% mutate(scientific.name = rownames(.)) %>% 
+  left_join(all_traits.final, by=c("scientific.name"="scientific_name")) %>%
+  left_join(sp.faxes)
+
+
+
+
+
 
 
 # -----
