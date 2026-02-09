@@ -25,7 +25,7 @@ unique(dat$project)
 # write_csv(dat, '../Collaborative/FnxSynthBase/bird_species_list.csv')
 
 dat1 <- read_csv('../Collaborative/FnxSynthBase/12_traits_wrangled.csv')
-
+glimpse(dat1)
 dat2 <- dat1 |> select(source, family, scientific_name, genus, epithet, 
                        taxonomic.resolution, taxon, mass_adult_g, length_adult_cm, age_life.span_years,
                        reproduction_reproductive.rate_num.events.per.year, reproduction_reproductive.rate_num.litter.or.clutch.per.year,
@@ -74,7 +74,8 @@ traits <- read_xlsx('../Collaborative/FnxSynthBase/BirdFuncDatExcel.xlsx') |>
 glimpse(traits)
 unique(traits$diet_cat)
 glimpse(traits)
-write_csv(traits, '../Collaborative/FnxSynthBase/macktratis_prelunch_birds_goodies_forLE.csv')
+
+# write_csv(traits, '../Collaborative/FnxSynthBase/macktratis_prelunch_birds_goodies_forLE.csv')
 comb <- dat4 |> 
       select(scientific_name) |> 
       distinct() |> 
@@ -83,4 +84,4 @@ comb <- dat4 |>
       select(-diet_cat)
 glimpse(comb)
 nacheck(comb)
-
+nacheck(comb)
