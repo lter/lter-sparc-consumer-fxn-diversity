@@ -138,29 +138,40 @@ all_traits <- program_sp_trt_data %>%
                 "reproduction_reproductive.rate_num.offspring.per.year",
                 "mass_adult_g",
                 "active.time_category_ordinal", "taxa")) %>%
-  group_by(project) %>% mutate(zp_age = scale(age_life.span_years),
-                               zp_trophic.level = scale(diet_trophic.level_num),
-                               zp_reproductive.rate = scale(reproduction_reproductive.rate_num.offspring.per.year),
-                               zp_mass_adult = scale(log(mass_adult_g, 10)))
+  group_by(project) %>% mutate(tr.age.zp = scale(age_life.span_years),
+                               tr.trophic.level.zp = scale(diet_trophic.level_num),
+                               tr.reproductive.rate.zp = scale(reproduction_reproductive.rate_num.offspring.per.year),
+                               tr.mass.adult.zp = scale(log(mass_adult_g, 10)))
 
+# Order and create the Active time categories:
+all_traits1 <- all_traits %>% 
+  dplyr::mutate(active.time_category_new = case_when(
+    active.time_category_ordinal == "diurnal" ~ "diurnal",
+    active.time_category_ordinal == "nocturnal" ~ "nocturnal",
+    ! active.time_category_ordinal %in% c("diurnal", "nocturnal", "") ~ "cathemeral")) %>% 
+  dplyr::select(-c(active.time_category_ordinal)) %>% 
+  dplyr::rename(tr.active.time = active.time_category_new)
 
 # ----
 
 # Reduce the project trait dataframe to species with tr data complete:
-all_traits.verts <- all_traits %>% filter(taxa %in% c("Fish","Amphibians","Mammals"))
+all_traits.verts <- all_traits1 %>% filter(taxa %in% c("Fish","Amphibians","Mammals"))
 
-all_traits.verts$n_nas <- rowSums(is.na(all_traits.verts[,c(14,16:19)]))
+all_traits.verts$n_nas <- rowSums(is.na(all_traits.verts[,grep(pattern = "tr.", x = colnames(all_traits.verts))]))
   
 all_traits.final <- all_traits.verts %>% filter(n_nas < 3)
 
-onlytraits <- as.data.frame(all_traits.final %>% ungroup() %>% select(14,16:19) %>% mutate(active.time_category_ordinal=as.factor(active.time_category_ordinal)))
+
+
+
+onlytraits <- as.data.frame(all_traits.final %>% ungroup() %>% select(starts_with("tr.")) %>% mutate(tr.active.time=as.ordered(tr.active.time)))
 
 rownames(onlytraits) <- all_traits.final$scientific_name
 
 
 # Build a dataframe gathering traits categories:
 tr_nm <- colnames(onlytraits)
-tr_cat <- c("N", "Q", "Q", "Q","Q")
+tr_cat <- c("Q", "Q", "Q","Q","O")
 tr_cat_df <- as.data.frame(matrix(ncol = 2, nrow = 5))
 tr_cat_df[, 1] <- tr_nm
 tr_cat_df[, 2] <- tr_cat
@@ -174,18 +185,18 @@ traits_summ <- mFD::sp.tr.summary(
   stop_if_NA = FALSE)
 traits_summ$tr_summary_list
 
-# Explore projects:
-asb_sp_matrix <- as.matrix(asb_sp_df)
-asb_sp_summ <- mFD::asb.sp.summary(asb_sp_w = asb_sp_matrix)
-asb_sp_summ$asb_sp_richn
+# # Explore projects:
+# asb_sp_matrix <- as.matrix(asb_sp_df)
+# asb_sp_summ <- mFD::asb.sp.summary(asb_sp_w = asb_sp_matrix)
+# asb_sp_summ$asb_sp_richn
 
 # Look at continuous traits correlations:
-corr_df <- sp_tr_df %>% 
-  tibble::rownames_to_column(var = "species") %>% 
-  dplyr::left_join(proj_traits_noNA_df[, c(3, 4)], by = "species") %>% 
-  dplyr::distinct()
-GGally::ggpairs(corr_df[, c(2:4)], aes(color = corr_df$taxa, 
-                                       alpha = 0.5))
+# corr_df <- sp_tr_df %>% 
+#   tibble::rownames_to_column(var = "species") %>% 
+#   dplyr::left_join(proj_traits_noNA_df[, c(3, 4)], by = "species") %>% 
+#   dplyr::distinct()
+# GGally::ggpairs(corr_df[, c(2:4)], aes(color = corr_df$taxa, 
+#                                        alpha = 0.5))
 
 
 # 5 - Build functional space for all species ===================================
@@ -193,13 +204,13 @@ GGally::ggpairs(corr_df[, c(2:4)], aes(color = corr_df$taxa,
 
 # Compute functional distance:
 sp_dist_all <- mFD::funct.dist(
-  sp_tr         = sp_tr_df,
+  sp_tr         = onlytraits,
   tr_cat        = tr_cat_df,
   metric        = "gower",
-  scale_euclid  = "scale_center",
+  scale_euclid  = "noscale",
   ordinal_var   = "classic",
   weight_type   = "equal",
-  stop_if_NA    = TRUE)
+  stop_if_NA    = FALSE)
 dist_df <- mFD::dist.to.df(list("df" = sp_dist_all))
 
 # Build functional space - check quality dimensions:
