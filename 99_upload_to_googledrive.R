@@ -54,4 +54,24 @@ purrr::walk(.x = trt_files,
             .f = ~ googledrive::drive_upload(media = file.path(trt_path, .x),
                                              path = trt_drive, overwrite = T))
 
+
+## --------------------------- ##
+# Upload species tidy Data ----
+## --------------------------- ##
+
+# List local file path to relevant folder
+spp_path <- file.path("Data", "species_tidy-data")
+
+# List local files in that folder
+spp_files <- dir(path = spp_path, pattern = "*.csv")
+
+# Identify the destination Drive folder
+spp_drive <- googledrive::as_id("https://drive.google.com/drive/folders/1VOJpEarHAs1csIzAT7pobWXWXjLt6TdN")
+
+# Upload all the files to the Drive (overwriting what's there if there is one already)
+purrr::walk(.x = spp_files,
+            .f = ~ googledrive::drive_upload(media = file.path(spp_path, .x),
+                                             path = spp_drive, overwrite = T))
+
+
 # End ----
