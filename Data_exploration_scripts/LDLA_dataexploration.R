@@ -158,14 +158,14 @@ all_traits1 <- all_traits %>%
 # Reduce the project trait dataframe to species with tr data complete:
 all_traits.verts <- all_traits1 %>% filter(taxa %in% c("Fish","Amphibians","Mammals"))
 
-all_traits.verts$n_nas <- rowSums(is.na(all_traits.verts[,grep(pattern = "tr.", x = colnames(all_traits.verts))]))
+all_traits.verts$n_nas <- rowSums(is.na(all_traits.verts[,grep(pattern = ".zp", x = colnames(all_traits.verts))]))
   
 all_traits.final <- all_traits.verts %>% filter(n_nas < 3)
 
 
 
 
-onlytraits <- data.frame(all_traits.final %>% ungroup() %>% select(starts_with("tr.")) %>% mutate(tr.active.time=as.factor(tr.active.time)))
+onlytraits <- data.frame(all_traits.final %>% ungroup() %>% select(ends_with(".zp"), tr.active.time) %>% mutate(tr.active.time=as.factor(tr.active.time)))
 
 
 rownames(onlytraits) <- all_traits.final$scientific_name
@@ -174,13 +174,13 @@ rownames(onlytraits) <- all_traits.final$scientific_name
 onlytraits.nat <- onlytraits %>% select(-tr.active.time)
 
 
-# Build a dataframe gathering traits categories:
-tr_nm <- colnames(onlytraits)
-tr_cat <- c("Q", "Q", "Q","Q","N")
-tr_cat_df <- as.data.frame(matrix(ncol = 2, nrow = 5))
-tr_cat_df[, 1] <- tr_nm
-tr_cat_df[, 2] <- tr_cat
-colnames(tr_cat_df) <- c("trait_name", "trait_type")
+# # Build a dataframe gathering traits categories:
+# tr_nm <- colnames(onlytraits)
+# tr_cat <- c("Q", "Q", "Q","Q","N")
+# tr_cat_df <- as.data.frame(matrix(ncol = 2, nrow = 5))
+# tr_cat_df[, 1] <- tr_nm
+# tr_cat_df[, 2] <- tr_cat
+# colnames(tr_cat_df) <- c("trait_name", "trait_type")
 
 # NO ACTIVE TIME Build a dataframe gathering traits categories:
 tr_nm <- colnames(onlytraits.nat)
@@ -285,13 +285,14 @@ fctsp_all
 # ----- Reattach metadata to ordination space dataframe ---------
 
 sp.faxes <- data.frame(sp_faxes_coord_all) %>% mutate(scientific.name=rownames(.))
-all.traits.final.forjoin <- all_traits.final %>% select(-starts_with("tr."))
+all.traits.final.forjoin <- all_traits.final %>% select(-ends_with(".zp"))
 
 taxa.df <- onlytraits.nat %>% mutate(scientific.name = rownames(.)) %>% 
   left_join(all.traits.final.forjoin, by=c("scientific.name"="scientific_name")) %>%
   left_join(sp.faxes)
 
 library(patchwork)
+library(viridis)
 
 taxa.df.hulls <- taxa.df %>%
   group_by(taxa) %>%
