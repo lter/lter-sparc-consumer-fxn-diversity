@@ -22,7 +22,7 @@ dat <- read_csv('../Collaborative/FnxSynthBase/23_species_master-spp-list.csv') 
 glimpse(dat)
 nacheck(dat)
 unique(dat$project)
-write_csv(dat, '../Collaborative/FnxSynthBase/bird_species_list.csv')
+# write_csv(dat, '../Collaborative/FnxSynthBase/bird_species_list.csv')
 
 dat1 <- read_csv('../Collaborative/FnxSynthBase/12_traits_wrangled.csv')
 
@@ -46,4 +46,41 @@ dat4 <- dat3 |>
       distinct()
 glimpse(dat4)
 
-write_csv(dat4, '../Collaborative/FnxSynthBase/bird_species_list_withtraitsmissing.csv')
+# write_csv(dat4, '../Collaborative/FnxSynthBase/bird_species_list_withtraitsmissing.csv')
+
+traits <- read_xlsx('../Collaborative/FnxSynthBase/BirdFuncDatExcel.xlsx') |> 
+      select(Scientific,`Diet-5Cat`, Nocturnal, `BodyMass-Value`) |> 
+      rename(
+            scientific_name = Scientific,
+            diet_cat = `Diet-5Cat`,
+            active.time_category_ordinal = Nocturnal,
+            mass_adult_g = `BodyMass-Value`
+      ) |> 
+      distinct() |> 
+      ### MW, NL, and LE made a call on these
+      mutate(diet_trophic.level_num = case_when(
+            diet_cat == "PlantSeed" ~ 1,
+            diet_cat == "FruiNect" ~ 1,
+            diet_cat == "Omnivore" ~ 1.5,
+            diet_cat ==  "Invertebrate" ~ 2,
+            diet_cat == "VertFishScav" ~ 3,
+            TRUE ~ NA_real_
+      )) |> 
+      ### MW, NL, and LE made a call on these
+      mutate(active.time_category_ordinal = case_when(
+            active.time_category_ordinal == 1 ~ 'nocturnal',
+            active.time_category_ordinal == 0 ~ 'diurnal'
+      ))
+glimpse(traits)
+unique(traits$diet_cat)
+glimpse(traits)
+write_csv(traits, '../Collaborative/FnxSynthBase/macktratis_prelunch_birds_goodies_forLE.csv')
+comb <- dat4 |> 
+      select(scientific_name) |> 
+      distinct() |> 
+      left_join(traits) |> 
+      mutate(source = 'Elton Traits_Wilmanetal2016') |> 
+      select(-diet_cat)
+glimpse(comb)
+nacheck(comb)
+
