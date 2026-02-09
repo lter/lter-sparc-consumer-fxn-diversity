@@ -77,11 +77,14 @@ glimpse(traits)
 
 # write_csv(traits, '../Collaborative/FnxSynthBase/macktratis_prelunch_birds_goodies_forLE.csv')
 comb <- dat4 |> 
-      select(scientific_name) |> 
-      distinct() |> 
+      select(scientific_name) |>
+      distinct() |>
       left_join(traits) |> 
       mutate(source = 'Elton Traits_Wilmanetal2016') |> 
       select(-diet_cat)
 glimpse(comb)
 nacheck(comb)
 nacheck(comb)
+
+all <- dat4 |> 
+      select()
