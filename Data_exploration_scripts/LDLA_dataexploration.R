@@ -291,6 +291,49 @@ taxa.df <- onlytraits.nat %>% mutate(scientific.name = rownames(.)) %>%
   left_join(all.traits.final.forjoin, by=c("scientific.name"="scientific_name")) %>%
   left_join(sp.faxes)
 
+library(patchwork)
+
+taxa.df.hulls <- taxa.df %>%
+  group_by(taxa) %>%
+  slice(chull(PC1, PC2))
+
+p2age <- ggplot(taxa.df, aes(x = PC1, y = PC2)) +
+  geom_point(aes(fill = tr.age.zp, shape = taxa), size = 2) +
+  geom_polygon(data = taxa.df.hulls, aes(lty = taxa), color = "black", fill = NA) +
+  scale_fill_viridis() +
+  scale_shape_manual(values = 21:23) +
+  theme_bw()
+p2age  
+
+
+p2trophic <- ggplot(taxa.df, aes(x = PC1, y = PC2)) +
+  geom_point(aes(fill = tr.trophic.level.zp, shape = taxa), size = 2) +
+  geom_polygon(data = taxa.df.hulls, aes(lty = taxa), color = "black", fill = NA) +
+  scale_fill_viridis() +
+  scale_shape_manual(values = 21:23) +
+  theme_bw()
+p2trophic
+
+
+p2mass <- ggplot(taxa.df, aes(x = PC1, y = PC2)) +
+  geom_point(aes(fill = tr.mass.adult.zp, shape = taxa), size = 2) +
+  geom_polygon(data = taxa.df.hulls, aes(lty = taxa), color = "black", fill = NA) +
+  scale_fill_viridis() +
+  scale_shape_manual(values = 21:23) +
+  theme_bw()
+p2mass
+
+
+p2rep <- ggplot(taxa.df, aes(x = PC1, y = PC2)) +
+  geom_point(aes(fill = tr.reproductive.rate.zp, shape = taxa), size = 2) +
+  geom_polygon(data = taxa.df.hulls, aes(lty = taxa), color = "black", fill = NA) +
+  scale_fill_viridis() +
+  scale_shape_manual(values = 21:23) +
+  theme_bw()
+p2rep
+
+
+p2s <- p2mass / p2trophic /p2age
 
 
 # -------- Visualization of Ordinations -----------------
