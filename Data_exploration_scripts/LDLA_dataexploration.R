@@ -142,7 +142,7 @@ all_traits <- program_sp_trt_data %>%
                                tr.trophic.level.zp = scale(diet_trophic.level_num)[,1],
                                tr.reproductive.rate.zp = scale(reproduction_reproductive.rate_num.offspring.per.year)[,1],
                                tr.mass.adult.zp = scale(log(mass_adult_g, 10))[,1]
-                               )
+                               ) %>%
 
 # Order and create the Active time categories:
 all_traits1 <- all_traits %>% 
@@ -174,13 +174,13 @@ rownames(onlytraits) <- all_traits.final$scientific_name
 onlytraits.nat <- onlytraits %>% select(-tr.active.time)
 
 
-# Build a dataframe gathering traits categories:
-tr_nm <- colnames(onlytraits)
-tr_cat <- c("Q", "Q", "Q","Q","N")
-tr_cat_df <- as.data.frame(matrix(ncol = 2, nrow = 5))
-tr_cat_df[, 1] <- tr_nm
-tr_cat_df[, 2] <- tr_cat
-colnames(tr_cat_df) <- c("trait_name", "trait_type")
+# # Build a dataframe gathering traits categories:
+# tr_nm <- colnames(onlytraits)
+# tr_cat <- c("Q", "Q", "Q","Q","N")
+# tr_cat_df <- as.data.frame(matrix(ncol = 2, nrow = 5))
+# tr_cat_df[, 1] <- tr_nm
+# tr_cat_df[, 2] <- tr_cat
+# colnames(tr_cat_df) <- c("trait_name", "trait_type")
 
 # NO ACTIVE TIME Build a dataframe gathering traits categories:
 tr_nm <- colnames(onlytraits.nat)
