@@ -138,18 +138,11 @@ all_traits <- program_sp_trt_data %>%
                 "reproduction_reproductive.rate_num.offspring.per.year",
                 "mass_adult_g",
                 "active.time_category_ordinal", "taxa")) %>%
-  group_by(project) %>% 
-  mutate(tr.age.zp = scale(age_life.span_years)[,1],
+  group_by(project) %>% mutate(tr.age.zp = scale(age_life.span_years)[,1],
                                tr.trophic.level.zp = scale(diet_trophic.level_num)[,1],
                                tr.reproductive.rate.zp = scale(reproduction_reproductive.rate_num.offspring.per.year)[,1],
                                tr.mass.adult.zp = scale(log(mass_adult_g, 10))[,1]
-                               ) %>%
-  ungroup() %>% group_by(taxa) %>%
-  mutate(tr.age.zt = scale(age_life.span_years)[,1],
-         tr.trophic.level.zt = scale(diet_trophic.level_num)[,1],
-         tr.reproductive.rate.zt = scale(reproduction_reproductive.rate_num.offspring.per.year)[,1],
-         tr.mass.adult.zt = scale(log(mass_adult_g, 10))[,1]
-  )
+                               )
 
 # Order and create the Active time categories:
 all_traits1 <- all_traits %>% 
@@ -165,14 +158,15 @@ all_traits1 <- all_traits %>%
 # Reduce the project trait dataframe to species with tr data complete:
 all_traits.verts <- all_traits1 %>% filter(taxa %in% c("Fish","Amphibians","Mammals"))
 
-all_traits.verts$n_nas <- rowSums(is.na(all_traits.verts[,grep(pattern = ".zp", x = colnames(all_traits.verts))]))
+all_traits.verts$n_nas <- rowSums(is.na(all_traits.verts[,grep(pattern = "tr.", x = colnames(all_traits.verts))]))
   
 all_traits.final <- all_traits.verts %>% filter(n_nas < 3)
 
 
-# 3 - Project-level z-score standardization ===================================================
 
-onlytraits <- data.frame(all_traits.final %>% ungroup() %>% select(ends_with(".zp"), tr.active.time) %>% mutate(tr.active.time=as.factor(tr.active.time)))
+
+onlytraits <- data.frame(all_traits.final %>% ungroup() %>% select(starts_with("tr.")) %>% mutate(tr.active.time=as.factor(tr.active.time)))
+
 
 rownames(onlytraits) <- all_traits.final$scientific_name
 #colnames(onlytraits) <- c("tr.age.zp", "tr.trophic.level.zp", "tr.reproductive.rate.zp", "tr.mass.adult.zp", "tr.active.time" )
@@ -180,13 +174,13 @@ rownames(onlytraits) <- all_traits.final$scientific_name
 onlytraits.nat <- onlytraits %>% select(-tr.active.time)
 
 
-# # Build a dataframe gathering traits categories:
-# tr_nm <- colnames(onlytraits)
-# tr_cat <- c("Q", "Q", "Q","Q","N")
-# tr_cat_df <- as.data.frame(matrix(ncol = 2, nrow = 5))
-# tr_cat_df[, 1] <- tr_nm
-# tr_cat_df[, 2] <- tr_cat
-# colnames(tr_cat_df) <- c("trait_name", "trait_type")
+# Build a dataframe gathering traits categories:
+tr_nm <- colnames(onlytraits)
+tr_cat <- c("Q", "Q", "Q","Q","N")
+tr_cat_df <- as.data.frame(matrix(ncol = 2, nrow = 5))
+tr_cat_df[, 1] <- tr_nm
+tr_cat_df[, 2] <- tr_cat
+colnames(tr_cat_df) <- c("trait_name", "trait_type")
 
 # NO ACTIVE TIME Build a dataframe gathering traits categories:
 tr_nm <- colnames(onlytraits.nat)
@@ -219,7 +213,7 @@ traits_summ$tr_summary_list
 #                                        alpha = 0.5))
 
 
-# 3.1 - Build functional space for all species ===================================
+# 5 - Build functional space for all species ===================================
 
 
 # Compute functional distance:
@@ -291,18 +285,13 @@ fctsp_all
 # ----- Reattach metadata to ordination space dataframe ---------
 
 sp.faxes <- data.frame(sp_faxes_coord_all) %>% mutate(scientific.name=rownames(.))
-all.traits.final.forjoin <- all_traits.final %>% select(-ends_with(".zp"))
+all.traits.final.forjoin <- all_traits.final %>% select(-starts_with("tr."))
 
 taxa.df <- onlytraits.nat %>% mutate(scientific.name = rownames(.)) %>% 
   left_join(all.traits.final.forjoin, by=c("scientific.name"="scientific_name")) %>%
   left_join(sp.faxes)
 
-
-
-# 3.2 - Visualize ordination space ===================================================
-
 library(patchwork)
-library(viridis)
 
 taxa.df.hulls <- taxa.df %>%
   group_by(taxa) %>%
@@ -313,7 +302,8 @@ p2age <- ggplot(taxa.df, aes(x = PC1, y = PC2)) +
   geom_polygon(data = taxa.df.hulls, aes(lty = taxa), color = "black", fill = NA) +
   scale_fill_viridis() +
   scale_shape_manual(values = 21:23) +
-  theme_bw()
+  theme_bw() +
+  labs(fill = "Age", shape = "Taxon", lty = "Taxon")
 p2age  
 
 
@@ -322,7 +312,8 @@ p2trophic <- ggplot(taxa.df, aes(x = PC1, y = PC2)) +
   geom_polygon(data = taxa.df.hulls, aes(lty = taxa), color = "black", fill = NA) +
   scale_fill_viridis() +
   scale_shape_manual(values = 21:23) +
-  theme_bw()
+  theme_bw() +
+  labs(fill = "Trophic level", shape = "Taxon", lty = "Taxon")
 p2trophic
 
 
@@ -331,7 +322,8 @@ p2mass <- ggplot(taxa.df, aes(x = PC1, y = PC2)) +
   geom_polygon(data = taxa.df.hulls, aes(lty = taxa), color = "black", fill = NA) +
   scale_fill_viridis() +
   scale_shape_manual(values = 21:23) +
-  theme_bw()
+  theme_bw() +
+  labs(fill = "Mass", shape = "Taxon", lty = "Taxon")
 p2mass
 
 
@@ -343,206 +335,112 @@ p2rep <- ggplot(taxa.df, aes(x = PC1, y = PC2)) +
   theme_bw()
 p2rep
 
-p2time <- ggplot(taxa.df, aes(x = PC1, y = PC2)) +
-  geom_point(aes(color = tr.active.time, shape = taxa), size = 2) +
-  geom_polygon(data = taxa.df.hulls, aes(lty = taxa), color = "black", fill = NA) +
-  scale_color_viridis_d() +
-  theme_bw() + facet_wrap(~taxa)
-p2time
 
+p2s <- p2mass / p2trophic /p2age + plot_layout(guides = "collect")
+p2s
 
-p2s <- p2mass / p2trophic /p2age
+# -------- Visualization of Ordinations -----------------
 
+ggplot(taxa.df, aes(x=PC1, PC2, col=project)) + geom_point() + facet_wrap(~taxa)+ theme_classic() + scale_color_viridis_d()
 
+ggplot(taxa.df, aes(x=tr.mass.adult.zp, y=tr.reproductive.rate.zp, col=taxa)) + geom_point() + scale_color_viridis_d()
 
-# 4 - Taxon-level z-score standardization ===================================================
-
-
-onlytraits.t <- data.frame(all_traits.final %>% ungroup() %>% select(ends_with(".zt"), tr.active.time) %>% mutate(tr.active.time=as.factor(tr.active.time)))
-
-rownames(onlytraits.t) <- all_traits.final$scientific_name
-#colnames(onlytraits) <- c("tr.age.zp", "tr.trophic.level.zp", "tr.reproductive.rate.zp", "tr.mass.adult.zp", "tr.active.time" )
-
-onlytraits.nat.t <- onlytraits.t %>% select(-tr.active.time)
-
-
-# # Build a dataframe gathering traits categories:
-# tr_nm <- colnames(onlytraits)
-# tr_cat <- c("Q", "Q", "Q","Q","N")
-# tr_cat_df <- as.data.frame(matrix(ncol = 2, nrow = 5))
-# tr_cat_df[, 1] <- tr_nm
-# tr_cat_df[, 2] <- tr_cat
-# colnames(tr_cat_df) <- c("trait_name", "trait_type")
-
-# NO ACTIVE TIME Build a dataframe gathering traits categories:
-tr_nm <- colnames(onlytraits.nat.t)
-tr_cat <- c("Q", "Q", "Q","Q")
-tr_cat_df <- as.data.frame(matrix(ncol = 2, nrow = 4))
-tr_cat_df[, 1] <- tr_nm
-tr_cat_df[, 2] <- tr_cat
-colnames(tr_cat_df) <- c("trait_name", "trait_type")
+#---------- 
 
 
 
-# Explore traits repartition:
-traits_summ <- mFD::sp.tr.summary(
-  tr_cat     = tr_cat_df,   
-  sp_tr      = onlytraits.nat.t, 
-  stop_if_NA = FALSE)
-traits_summ$tr_summary_list
+#---------- poor attempts at exploring community patterns
+communities <- read.csv(file = "Data/community_tidy-data/04_harmonized_consumer_excretion_sparc_cnd_site.csv") 
+glimpse(communities)
 
-# # Explore projects:
-# asb_sp_matrix <- as.matrix(asb_sp_df)
-# asb_sp_summ <- mFD::asb.sp.summary(asb_sp_w = asb_sp_matrix)
-# asb_sp_summ$asb_sp_richn
+comm.filtered <- communities %>%
+  mutate(taxa = case_when(
+    project == "CoastalCA" ~ "Fish",
+    project == "FCE" ~ "Fish",
+    project == "SBC" ~ "Fish",
+    project == "MCR" ~ "Fish",
+    project == "VCR" ~ "Fish",
+    project == "RLS" ~ "Fish",
+    project == "FISHGLOB" ~ "Fish",
+    project == "KBS_MAM" ~ "Mammals",
+    project == "SEV" ~ "Mammals",
+    project == "MOHONK" ~ "Amphibians",
+    project == "KBS_AMP" ~ "Amphibians",
+    project %in% c("HARVARD", "KBS_BIR","SBC_BEACH") ~ "Birds",
+    project %in% c("NGA","Arctic","Palmer","CCE","NorthLakes") ~ "Zooplankton",
+    TRUE ~ NA
+  )) %>%
+  filter(taxa == "Fish") %>%
+  unite("ID", c(project, habitat, site, year), sep = "_", remove = F) %>%
+  group_by(ID, scientific_name) %>%
+  summarize(abundance = sum(count_num, na.rm = TRUE), biomass = sum(biomass_g, na.rm = TRUE)) %>%
+  filter(abundance > 0,
+         biomass > 0)
 
-# Look at continuous traits correlations:
-# corr_df <- sp_tr_df %>% 
-#   tibble::rownames_to_column(var = "species") %>% 
-#   dplyr::left_join(proj_traits_noNA_df[, c(3, 4)], by = "species") %>% 
-#   dplyr::distinct()
-# GGally::ggpairs(corr_df[, c(2:4)], aes(color = corr_df$taxa, 
-#                                        alpha = 0.5))
+traitsxcomms <- comm.filtered %>%
+  rename(scientific.name = "scientific_name") %>%
+  left_join(taxa.df)
 
+model1 <- brm(abundance ~ PC1 + PC2 + (1|project), family = "negbinomial", data = traitsxcomms,
+              cores = 4, chains = 4, backend = "cmdstanr")
+summary(model1)
+plot(model1)
 
-# 4.1 - Build functional space for all species ===================================
-
-
-# Compute functional distance:
-sp_dist_all.t <- mFD::funct.dist(
-  sp_tr         = onlytraits.nat.t,
-  tr_cat        = tr_cat_df,
-  metric        = "gower",
-  scale_euclid  = "noscale",
-  ordinal_var   = "classic",
-  weight_type   = "equal",
-  stop_if_NA    = FALSE)
-dist_df <- mFD::dist.to.df(list("df" = sp_dist_all))
-
-# Build functional space - check quality dimensions:
-fspaces_quality_all.t <- mFD::quality.fspaces(
-  sp_dist             = sp_dist_all.t,
-  maxdim_pcoa         = 10,
-  deviation_weighting = "absolute",
-  fdist_scaling       = FALSE,
-  fdendro             = "average")
-mFD::quality.fspaces.plot(
-  fspaces_quality            = fspaces_quality_all.t,
-  quality_metric             = "mad",
-  fspaces_plot               = c("tree_average", "pcoa_2d", "pcoa_3d", 
-                                 "pcoa_4d"))
-
-# Get species coordinates:
-sp_faxes_coord_all.t <- fspaces_quality_all.t$"details_fspaces"$"sp_pc_coord"
-
-
-# Get link between axes and traits:
-all_tr_faxes.t <- mFD::traits.faxes.cor(
-  sp_tr          = onlytraits.nat.t, 
-  sp_faxes_coord = sp_faxes_coord_all.t[ , c("PC1", "PC2", "PC3")], 
-  plot           = TRUE, 
-  stop_if_NA = FALSE)
-all_tr_faxes
-
-# Plot functional space:
-fctsp_all.t <- mFD::funct.space.plot(
-  sp_faxes_coord  = sp_faxes_coord_all.t[ , c("PC1", "PC2", "PC3")],
-  faxes           = c("PC1", "PC2", "PC3"),
-  name_file       = NULL,
-  faxes_nm        = NULL,
-  range_faxes     = c(NA, NA),
-  color_bg        = "grey95",
-  color_pool      = "#53868B",
-  fill_pool       = "white",
-  shape_pool      = 21,
-  size_pool       = 1,
-  plot_ch         = TRUE,
-  color_ch        = "#EEAD0E",
-  fill_ch         = "white",
-  alpha_ch        = 0.5,
-  plot_vertices   = TRUE,
-  color_vert      = "#EEAD0E",
-  fill_vert       = "#EEAD0E",
-  shape_vert      = 23,
-  size_vert       = 1,
-  plot_sp_nm      = NULL,
-  nm_size         = 3,
-  nm_color        = "black",
-  nm_fontface     = "plain",
-  check_input     = TRUE)
-fctsp_all.t
-
-
-
-# ----- Reattach metadata to ordination space dataframe ---------
-# rename the taxon-level PCs with '.t'
-colnames(sp_faxes_coord_all.t) <- paste(colnames(sp_faxes_coord_all), "t",sep=".")
+params <- model1 %>%
+  spread_draws(b_Intercept, b_PC1, b_PC2) %>%
+  pivot_longer(starts_with("b"), names_to = "Parameter", values_to = "value")
   
-sp.faxes.t <- data.frame(sp_faxes_coord_all.t) %>% mutate(scientific.name=rownames(.))
-# all.traits.final.forjoin <- all_traits.final %>% select(-ends_with(".zt"))
-
-taxa.df.t <- taxa.df %>%
-  left_join(sp.faxes.t)
-
-
-# 4.2 - Visualize ordination space ===================================================
-
-library(patchwork)
-library(viridis)
-
-taxa.df.hulls.t <- taxa.df.t %>%
-  group_by(taxa) %>%
-  slice(chull(PC1.t, PC2.t))
-
-p2age <- ggplot(taxa.df, aes(x = PC1, y = PC2)) +
-  geom_point(aes(fill = tr.age.zp, shape = taxa), size = 2) +
-  geom_polygon(data = taxa.df.hulls, aes(lty = taxa), color = "black", fill = NA) +
-  scale_fill_viridis() +
-  scale_shape_manual(values = 21:23) +
+param.plot <- ggplot(params, aes(y = Parameter, x = value)) +
+  geom_halfeyeh(fill = "#4B0082", color = "black", alpha = 0.7) +
+  geom_vline(xintercept = 0, lty = 2) +
   theme_bw()
-p2age  
+param.plot
+
+m1p1 <- conditional_effects(model1, resolution = 1000)
+df1.1 <- as.data.frame(m1p1[[1]])
+
+plot1.1 <- ggplot(df1.1) +
+  geom_line(aes(x = effect1__, y = estimate__), color = "black", lwd = 1.2) +
+  geom_ribbon(aes(x= effect1__, ymin = lower__, ymax = upper__), color = "black",fill = alpha("#4B0082", 0.3), lty = 2, lwd = 0.3) +
+  theme_bw() +
+  theme(legend.position = "none",
+        axis.text=element_text(color="black", size = 8),
+        axis.title=element_text(color="black", size = 8),
+        axis.line = element_blank(),
+        axis.ticks = element_line(color = "black")) 
+plot1.1
 
 
-p2trophic <- ggplot(taxa.df, aes(x = PC1, y = PC2)) +
-  geom_point(aes(fill = tr.trophic.level.zp, shape = taxa), size = 2) +
-  geom_polygon(data = taxa.df.hulls, aes(lty = taxa), color = "black", fill = NA) +
-  scale_fill_viridis() +
-  scale_shape_manual(values = 21:23) +
+model2 <- brm(biomass ~ PC1 + PC2 + (1|project), family = "gamma", data = traitsxcomms,
+              cores = 4, chains = 4, backend = "cmdstanr")
+summary(model2)
+plot(model2)
+
+params2 <- model2 %>%
+  spread_draws(b_Intercept, b_PC1, b_PC2) %>%
+  pivot_longer(starts_with("b"), names_to = "Parameter", values_to = "value")
+
+param.plot2 <- ggplot(params2, aes(y = Parameter, x = value)) +
+  geom_halfeyeh(fill = "gold3", color = "black", alpha = 0.7) +
+  geom_vline(xintercept = 0, lty = 2) +
   theme_bw()
-p2trophic
+param.plot2
 
+m1p2 <- conditional_effects(model2, resolution = 1000)
+df1.2 <- as.data.frame(m1p2[[2]])
 
-p2mass <- ggplot(taxa.df, aes(x = PC1, y = PC2)) +
-  geom_point(aes(fill = tr.mass.adult.zp, shape = taxa), size = 2) +
-  geom_polygon(data = taxa.df.hulls, aes(lty = taxa), color = "black", fill = NA) +
-  scale_fill_viridis() +
-  scale_shape_manual(values = 21:23) +
-  theme_bw()
-p2mass
+plot1.2 <- ggplot(df1.2) +
+  geom_line(aes(x = effect1__, y = estimate__), color = "black", lwd = 1.2) +
+  geom_ribbon(aes(x= effect1__, ymin = lower__, ymax = upper__), color = "black",fill = alpha("gold3", 0.3), lty = 2, lwd = 0.3) +
+  theme_bw() +
+  theme(legend.position = "none",
+        axis.text=element_text(color="black", size = 8),
+        axis.title=element_text(color="black", size = 8),
+        axis.line = element_blank(),
+        axis.ticks = element_line(color = "black")) 
+plot1.2
 
-
-p2rep <- ggplot(taxa.df, aes(x = PC1, y = PC2)) +
-  geom_point(aes(fill = tr.reproductive.rate.zp, shape = taxa), size = 2) +
-  geom_polygon(data = taxa.df.hulls, aes(lty = taxa), color = "black", fill = NA) +
-  scale_fill_viridis() +
-  scale_shape_manual(values = 21:23) +
-  theme_bw()
-p2rep
-
-p2time <- ggplot(taxa.df, aes(x = PC1, y = PC2)) +
-  geom_point(aes(color = tr.active.time, shape = taxa), size = 2) +
-  geom_polygon(data = taxa.df.hulls, aes(lty = taxa), color = "black", fill = NA) +
-  scale_color_viridis_d() +
-  theme_bw() + facet_wrap(~taxa)
-p2time
-
-
-p2s <- p2mass / p2trophic /p2age
-
-
-
-
-
+param.plots <- param.plot + param.plot2
 
 ####### OLD CODE ###############
 
