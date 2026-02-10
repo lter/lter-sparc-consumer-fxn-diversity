@@ -92,11 +92,11 @@ traits1 <- readxl::read_xlsx('../Collaborative/FnxSynthBase/birdbase_clean.xlsx'
             mass_g = mean(
                   c_across(c(female_min_mass, female_max_mass,
                              male_min_mass,   male_max_mass)),
-                  na.rm = TRUE
+                  # na.rm = TRUE
             ),
             clutch_num = mean(
                   c_across(c(clutch_min, clutch_max)),
-                  na.rm = TRUE
+                  # na.rm = TRUE
             )
       ) |>
       ungroup() |>
@@ -145,7 +145,7 @@ traits2 <- readr::read_csv('../Collaborative/FnxSynthBase/traits6_v2.csv') |>
       mutate(
             clutch_num = mean(
                   c_across(c(clutch_min, clutch_max)),
-                  na.rm = TRUE
+                  # na.rm = TRUE
             )
       ) |>
       ungroup() |> 
