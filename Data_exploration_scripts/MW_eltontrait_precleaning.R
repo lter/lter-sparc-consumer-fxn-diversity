@@ -51,28 +51,4 @@ traits <- readxl::read_xlsx('../Collaborative/FnxSynthBase/BirdFuncDatExcel.xlsx
 glimpse(traits)
 unique(traits$diet_cat)
 nacheck(traits)
-
-# NA-fill possible columns -----------------------------------------
-cols_to_fill <- c("mass_adult_g", "diet_trophic.level_num", "active.time_category_ordinal")
-?coalesce()
-comb <- dat1.2 |> 
-      left_join(traits, by = "scientific_name", suffix = c("", "_traits")) %>%
-      mutate(
-            mass_adult_g = coalesce(mass_adult_g, mass_adult_g_traits),
-            diet_trophic.level_num = coalesce(diet_trophic.level_num, diet_trophic.level_num_traits),
-            active.time_category_ordinal = coalesce(active.time_category_ordinal, active.time_category_ordinal_traits)
-      ) |> 
-      select(
-            -mass_adult_g_traits,
-            -diet_trophic.level_num_traits,
-            -active.time_category_ordinal_traits,
-            -diet_cat
-      )
-nacheck(dat1.2)
-nacheck(comb)
-
-tibble(
-      column = cols_to_fill,
-      filled = purrr::map_int(cols_to_fill, ~ sum(is.na(dat1.2[[.x]]) & !is.na(comb[[.x]]))),
-      remaining_NA = purrr::map_int(cols_to_fill, ~ sum(is.na(comb[[.x]])))
-) |> print()
+write_csv(traits, '../Collaborative/FnxSynthBase/elton_traits_birds.csv')
