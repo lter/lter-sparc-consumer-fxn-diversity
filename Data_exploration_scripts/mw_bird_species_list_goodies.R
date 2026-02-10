@@ -30,8 +30,16 @@ dat1 <- readr::read_csv('../Collaborative/FnxSynthBase/consumer-trait-species-im
 glimpse(dat1)
 unique(dat1$family)
 
+dat2 <- readr::read_csv('../Collaborative/FnxSynthBase/consumer-trait-species-imputed-taxonmic-database.csv')
+glimpse(dat2)
+unique(dat2$family)
+
+dat3 <- readr::read_csv('../Collaborative/FnxSynthBase/consumer-trait-species-imputed-taxonmic-database.csv')
+glimpse(dat3)
+unique(dat3$family)
+
 # Join species list to imputed DB + keep first row per species ----------
-dat1.2 <- dat |>
+dat1.1 <- dat |>
       left_join(dat1) |>  # assumes same column name in both
       dplyr::select(
             source, family, scientific_name, genus,
@@ -44,8 +52,8 @@ dat1.2 <- dat |>
       slice(1) |>
       ungroup()
 
-glimpse(dat1.2)
-nacheck(dat1.2)
+glimpse(dat1.1)
+nacheck(dat1.1)
 
 # Read BirdFuncDatExcel traits + recode + keep first row per species ----
 traits <- readxl::read_xlsx('../Collaborative/FnxSynthBase/BirdFuncDatExcel.xlsx') |>
@@ -84,7 +92,7 @@ nacheck(traits)
 # NA-fill possible columns -----------------------------------------
 cols_to_fill <- c("mass_adult_g", "diet_trophic.level_num", "active.time_category_ordinal")
 ?coalesce()
-comb <- dat1.2 |> 
+comb <- dat1.1 |> 
       left_join(traits, by = "scientific_name", suffix = c("", "_traits")) %>%
       mutate(
             mass_adult_g = coalesce(mass_adult_g, mass_adult_g_traits),
@@ -97,11 +105,11 @@ comb <- dat1.2 |>
             -active.time_category_ordinal_traits,
             -diet_cat
       )
-nacheck(dat1.2)
+nacheck(dat1.1)
 nacheck(comb)
 
 tibble(
       column = cols_to_fill,
-      filled = purrr::map_int(cols_to_fill, ~ sum(is.na(dat1.2[[.x]]) & !is.na(comb[[.x]]))),
+      filled = purrr::map_int(cols_to_fill, ~ sum(is.na(dat1.1[[.x]]) & !is.na(comb[[.x]]))),
       remaining_NA = purrr::map_int(cols_to_fill, ~ sum(is.na(comb[[.x]])))
 ) |> print()
