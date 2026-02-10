@@ -231,18 +231,19 @@ trt_v8 <- trt_v7 %>%
     reproduction_reproductive.mode.viviparous_binary == 1 ~ "viviparous",
     T ~ NA), .before = reproduction_reproductive.mode.direct_binary) %>%
   dplyr::select(-dplyr::starts_with(c("reproduction_reproductive.mode."))) %>%
-  ### Calculate offspring per year where possible
-  dplyr::mutate(reproduction_reproductive.rate_num.offspring.per.year = dplyr::case_when(
-    !is.na(reproduction_reproductive.rate_num.offspring.per.year) ~ reproduction_reproductive.rate_num.offspring.per.year,
-    !is.na(reproduction_reproductive.rate_num.offspring.per.clutch.or.litter) & !is.na(reproduction_reproductive.rate_num.litter.or.clutch.per.year) ~ reproduction_reproductive.rate_num.offspring.per.clutch.or.litter * reproduction_reproductive.rate_num.litter.or.clutch.per.year,
-    #!is.na(reproduction_reproductive.rate_num.offspring.per.litter) & !is.na(reproduction_reproductive.rate_num.litter.per.year) ~ reproduction_reproductive.rate_num.offspring.per.litter * reproduction_reproductive.rate_num.litter.per.year,
-    T ~ NA)) %>%
   ### Calculate mean of offspring.per.clutch.or.litter
   dplyr::rowwise() %>%
   dplyr::mutate(reproduction_reproductive.rate_num.offspring.per.clutch.or.litter.mean = mean(
     dplyr::c_across(c(reproduction_reproductive.rate_num.offspring.per.clutch.or.litter_min, reproduction_reproductive.rate_num.offspring.per.clutch.or.litter_max))
   ))%>%
-  dplyr::ungroup() %>%
+  ### Calculate offspring per year where possible
+  dplyr::mutate(reproduction_reproductive.rate_num.offspring.per.year = dplyr::case_when(
+    !is.na(reproduction_reproductive.rate_num.offspring.per.year) ~ reproduction_reproductive.rate_num.offspring.per.year,
+    !is.na(reproduction_reproductive.rate_num.offspring.per.clutch.or.litter) & !is.na(reproduction_reproductive.rate_num.litter.or.clutch.per.year) ~ reproduction_reproductive.rate_num.offspring.per.clutch.or.litter * reproduction_reproductive.rate_num.litter.or.clutch.per.year,
+    T ~ NA)) %>%
+  dplyr::mutate(reproduction_reproductive.rate_num.offspring.per.year = dplyr::case_when(
+    !is.na(reproduction_reproductive.rate_num.offspring.per.clutch.or.litter.mean) ~ reproduction_reproductive.rate_num.offspring.per.clutch.or.litter.mean,
+  )) %>%
   # Size traits - convert to centimeters
   ### Adult length
   dplyr::mutate(length_adult_cm = dplyr::case_when(
