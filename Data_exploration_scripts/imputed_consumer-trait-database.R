@@ -233,7 +233,7 @@ imp_check <- all_long_v02 %>%
     !is.na(trait_value_genus) ~ "genus average",
     !is.na(trait_value_family) ~ "family average",
     !is.na(trait_value_class) ~ "class average",
-    !is.na(trait_value_order) ~ "order_average",
+    !is.na(trait_value_order) ~ "order average",
     T ~ NA)) %>% 
   # Ditch trait values
   dplyr::select(-dplyr::contains("trait_value_"))
