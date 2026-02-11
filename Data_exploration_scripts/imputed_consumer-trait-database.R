@@ -186,7 +186,13 @@ all_long_v02 <- all_long %>%
     by = c("source", "order", "trait_name")) %>% 
   # Make empty cells true NAs
   dplyr::mutate(dplyr::across(.cols = dplyr::everything(),
-    .fns = ~ ifelse(nchar(.) == 0 | . %in% c("NA", "NaN"), yes = NA, no = .))) %>% 
+    .fns = ~ ifelse(nchar(.) == 0 | . %in% c("NA", "NaN"), yes = NA, no = .)))
+
+# Check structure
+dplyr::glimpse(all_long_v02)
+
+# Tidy that object somewhat
+all_long_v03 <- all_long_v02 %>% 
   # Coalesce multiple resulting trait value columns
   dplyr::mutate(trait_value = dplyr::case_when(
     !is.na(trait_value_orig) ~ trait_value_orig,
@@ -203,13 +209,13 @@ all_long_v02 <- all_long %>%
   dplyr::distinct()
 
 # How many NAs does that resolve?
-sum(is.na(all_long$trait_value_orig)) - sum(is.na(all_long_v02$trait_value))
+sum(is.na(all_long$trait_value_orig)) - sum(is.na(all_long_v03$trait_value))
 
 # Check structure
-dplyr::glimpse(all_long_v02)
+dplyr::glimpse(all_long_v03)
 
 # Pivot back to wide format
-all_trt_v02 <- all_long_v02 %>% 
+all_trt_v02 <- all_long_v03 %>% 
   tidyr::pivot_wider(names_from = trait_name,
     values_from = trait_value)
 
@@ -220,20 +226,40 @@ dplyr::glimpse(all_trt_v02)
 # Identify Imputed Values ----
 ## ------------------------------##
 
-## Need to think about this
-## I think we can do this conditionally via which taxa/traits are in the various tax-specific aggregation objects
-## And add it on _after_ pivoting the imputed trait data back to wide format
-### Preferable because adding _before_ will make pivoting harder (I think)
-## But need to think a bit more about how to do that
+# Identify at what level/whether trait values are imputed
+imp_check <- all_long_v02 %>% 
+  dplyr::mutate(imputed = dplyr::case_when(
+    !is.na(trait_value_orig) ~ "not imputed",
+    !is.na(trait_value_genus) ~ "genus average",
+    !is.na(trait_value_family) ~ "family average",
+    !is.na(trait_value_class) ~ "class average",
+    !is.na(trait_value_order) ~ "order_average",
+    T ~ NA)) %>% 
+  # Ditch trait values
+  dplyr::select(-dplyr::contains("trait_value_"))
 
-# Identify imputed values
-all_trt_v03 <- all_trt_v02
+# Check structure
+dplyr::glimpse(imp_check)
+
+# Now flip that to wide format
+imp_wide <- imp_check %>% 
+  dplyr::mutate(name_actual = paste0(trait_name, "_impute.level")) %>% 
+  dplyr::select(-trait_name) %>% 
+  tidyr::pivot_wider(names_from = name_actual, values_from = imputed)
+
+# Check structure
+dplyr::glimpse(imp_wide)
+
+# Attach that to the imputed trait object
+all_trt_v03 <- all_trt_v02 %>% 
+  dplyr::left_join(x = ., y = imp_wide,
+    by = c("source", "order", "class", "family", "genus", "scientific_name"))
 
 # Check structure
 dplyr::glimpse(all_trt_v03)
 
 ## ------------------------------##
-
+# Export ----
 ## ------------------------------##
 
 # Make a final object
