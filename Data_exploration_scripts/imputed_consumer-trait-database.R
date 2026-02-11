@@ -216,6 +216,39 @@ all_trt_v02 <- all_long_v02 %>%
 # Check structure
 dplyr::glimpse(all_trt_v02)
 
+## ------------------------------##
+# Identify Imputed Values ----
+## ------------------------------##
+
+## Need to think about this
+## I think we can do this conditionally via which taxa/traits are in the various tax-specific aggregation objects
+## And add it on _after_ pivoting the imputed trait data back to wide format
+### Preferable because adding _before_ will make pivoting harder (I think)
+## But need to think a bit more about how to do that
+
+# Identify imputed values
+all_trt_v03 <- all_trt_v02
+
+# Check structure
+dplyr::glimpse(all_trt_v03)
+
+## ------------------------------##
+
+## ------------------------------##
+
+# Make a final object
+consumer_imputed_traits_v99 <- all_trt_v03
+
+# Check structure
+dplyr::glimpse(consumer_imputed_traits_v99)
+
+# Identify the file name & path
+consumer_traits_file <- "consumer-trait-species-imputed-taxonmic-database.csv"
+consumer_traits_path <- file.path("Data", "traits_tidy-data", consumer_traits_file)
+
+# Export locally
+write.csv(x = consumer_imputed_traits_v99, na = '', row.names = F, file = consumer_traits_path)
+
 # End ----
 
 ## -------------------------------------------------------------##
