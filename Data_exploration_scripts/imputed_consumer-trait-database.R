@@ -26,9 +26,9 @@ source("00_setup.R")
 # Clear environment & collect garbage
 rm(list = ls()); gc()
 
-## ------------------------------##
+## ------------------------------ ##
 #Load Consumer Taxa List ----
-## ------------------------------##
+## ------------------------------ ##
 
 # Read in master species list for all programs
 sp_pro_list <- read.csv(file.path("Data", "species_tidy-data", "23_species_master-spp-list.csv"))
@@ -36,9 +36,9 @@ sp_pro_list <- read.csv(file.path("Data", "species_tidy-data", "23_species_maste
 # Check structure
 dplyr::glimpse(sp_pro_list)
 
-## ------------------------------##
+## ------------------------------ ##
 # Load Trait Data ----
-## ------------------------------##
+## ------------------------------ ##
 
 ## Read in all trait databases and clean up if necessary
 all_trt_v00 <- read.csv(file.path("Data", "traits_tidy-data", "12_traits_wrangled.csv"))
@@ -85,9 +85,9 @@ all_long <- all_trt_v01 %>%
 # Check structure
 dplyr::glimpse(all_long)
 
-## ------------------------------##
+## ------------------------------ ##
 # Summarize to Various Taxonomic Levels ----
-## ------------------------------##
+## ------------------------------ ##
 
 # Summarize to genus
 gen_long <- all_trt_v01 %>% 
@@ -169,9 +169,9 @@ ord_long <- all_trt_v01 %>%
 # Check structure
 dplyr::glimpse(ord_long)
 
-## ------------------------------##
+## ------------------------------ ##
 # Join & Coalesce Trait data
-## ------------------------------##
+## ------------------------------ ##
 
 # Join from lowest to highest resolution
 all_long_v02 <- all_long %>% 
@@ -222,9 +222,9 @@ all_trt_v02 <- all_long_v03 %>%
 # Check structure
 dplyr::glimpse(all_trt_v02)
 
-## ------------------------------##
+## ------------------------------ ##
 # Identify Imputed Values ----
-## ------------------------------##
+## ------------------------------ ##
 
 # Identify at what level/whether trait values are imputed
 imp_check <- all_long_v02 %>% 
@@ -274,6 +274,26 @@ consumer_traits_path <- file.path("Data", "traits_tidy-data", consumer_traits_fi
 
 # Export locally
 write.csv(x = consumer_imputed_traits_v99, na = '', row.names = F, file = consumer_traits_path)
+
+## ------------------------------ ##
+# Tally Order Trait Coverage
+## ------------------------------ ##
+
+# Identify order-by-project missing traits
+missing_traits <- all_long_v03 %>% 
+  # Keep only traits without values
+  dplyr::filter(is.na(trait_value)) %>% 
+  # And only instances where order is known
+  dplyr::filter(!is.na(order)) %>% 
+  # Now grab which traits are missing
+  dplyr::group_by(source, order) %>% 
+  dplyr::summarize(missing_traits = paste(trait_name, collapse = "; "),
+    .groups = "keep") %>% 
+  dplyr::ungroup()
+
+# Check struture
+dplyr::glimpse(missing_traits)
+
 
 # End ----
 
