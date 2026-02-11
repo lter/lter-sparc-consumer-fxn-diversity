@@ -6,7 +6,7 @@
 # Sites: Palmer LTER, Arctic LTER, North Lakes LTER
 
 # Load libraries
-librarian::shelf(tidyverse)
+librarian::shelf(tidyverse,taxize)
 
 # Get set up
 source("00_setup.R")
@@ -14,6 +14,8 @@ source("00_setup.R")
 # Clear environment & collect garbage
 rm(list = ls()); gc()
 
+# do we want to check species 
+run_species_check <- "N"
 
 # read in the harmonized data
 df <- read.csv(file.path("Data", "community_tidy-data","02_community_wrangled.csv"),stringsAsFactors = F,na.strings =c(""))
@@ -116,7 +118,7 @@ cnd <- read.csv(file.path("Data", "community_raw-data","harmonized_consumer_excr
 
 cnd1<-cnd %>%
   dplyr::select(-row_num,-common_name,-species) %>%
-  mutate(length_cm=NA,count_num=NA, biomass_g=NA)
+  dplyr::mutate(length_cm=NA,count_num=NA, biomass_g=NA)
 
 ###combine consumer data
 #check differences in column names and check column names to prepare to combine all consumer data
@@ -124,20 +126,150 @@ cnd1<-cnd %>%
 comball <- rbind(exc_df, cnd1) %>%
   dplyr::select(all_of(col_list)) 
 
+
+##########Only run this if we need to check the species against ITIS###############
+
+
+if (run_species_check =="Y"){
+
+ #read in the species check file if it exists, if not create a new one and run the check. This file will be updated with the new species that are added to the dataset and will be used for future checks.
+  if (file.exists(file.path("Data", "community_tidy-data","04_all_community_taxa_itis_checked.csv"))) {
+    message("Species check file already exists. Loading existing file.")
+   spe_check <- read.csv(file.path("Data", "community_tidy-data","04_all_community_taxa_itis_checked.csv"),stringsAsFactors = F,na.strings =c(""))
+
+  } else {
+    message("Species check file does not exist. Creating new file and running species check.")
+    spe_check <- data.frame(scientific_name = character(),
+                            kingdom = character(),
+                            phylum = character(),
+                            class = character(),
+                            order = character(),
+                            family = character(),
+                            genus = character(),
+                            species = character(),
+                            stringsAsFactors = FALSE)
+  }
+
+spe_check1 <- spe_check %>%
+  dplyr::filter(!is.na(kingdom)) 
+
+taxa_check <- comball %>%
+ #select the scientific_name column. This column originally filled based on LTER sites reported species names
+ dplyr::select(scientific_name)%>%
+#Grab all unique species names
+ mutate(scientific_name = sub("\\s+spp?\\.?$", "", scientific_name),
+        scientific_name = trimws(scientific_name)) %>%
+ dplyr::distinct() %>%
+#exclude the species that have already been checked and have a match in the spe_check1 dataset
+ dplyr::filter(!scientific_name %in% spe_check1$scientific_name) %>%
+#Create an empty placeholder column to fill later
+ dplyr::mutate(kingdom = NA,
+               phylum = NA,
+               class = NA,
+               order = NA,
+               family = NA,
+               genus = NA,
+               species = NA)
+
+
+### add kingdom, phylum, order, family, genus and species name using taxize
+
+for (i in 1:length(taxa_check$scientific_name)) {
+
+  sp <- taxa_check[i, ]$scientific_name
+
+  # Query species taxonomic information with error handling
+  identified_species_names <- tryCatch(
+    taxize::tax_name(
+      sci = sp,
+      get = c("kingdom", "phylum", "class", "order", "family", "genus", "species"),
+      db = "itis",
+      accepted = TRUE,
+      ask = FALSE
+    ),
+    error = function(e) NULL
+  )
+
+  # Fill taxonomy info safely
+  taxa_check[i, ]$kingdom <- if (!is.null(identified_species_names)) paste0(identified_species_names$kingdom, collapse = "") else NA
+  taxa_check[i, ]$phylum  <- if (!is.null(identified_species_names)) paste0(identified_species_names$phylum, collapse = "") else NA
+  taxa_check[i, ]$class   <- if (!is.null(identified_species_names)) paste0(identified_species_names$class, collapse = "") else NA
+  taxa_check[i, ]$order   <- if (!is.null(identified_species_names)) paste0(identified_species_names$order, collapse = "") else NA
+  taxa_check[i, ]$family  <- if (!is.null(identified_species_names)) paste0(identified_species_names$family, collapse = "") else NA
+  taxa_check[i, ]$genus   <- if (!is.null(identified_species_names)) paste0(identified_species_names$genus, collapse = "") else NA
+  taxa_check[i, ]$species <- if (!is.null(identified_species_names)) paste0(identified_species_names$species, collapse = "") else NA
+
+} #close the for loop
+
+# --- Error check at the end ---
+# Find which species didn’t get a match
+unmatched <- taxa_check[taxa_check$kingdom=="NA", "scientific_name"]
+
+if (length(unmatched) > 0) {
+  message("Warning: No ITIS records found for these species:\n",
+          paste(unmatched, collapse = ", "))
+} else {
+  message("All species matched successfully!")
+}
+
+taxa_check_v2 <- taxa_check
+#Replace the string "NA" with actual NA values
+taxa_check_v2[taxa_check_v2 == "NA"] <- NA
+
+#combine with spe_check1 to get the full list of species and their taxonomic information
+taxa_check_v3<- rbind(spe_check1, taxa_check_v2) %>%
+  arrange(kingdom, phylum, class, order, family, genus, species)
+  
+write.csv(x = taxa_check_v3, row.names = F, na = '',
+          file = file.path("Data", "community_tidy-data","04_all_community_taxa_itis_checked.csv"))
+} # close the species check
+
+#load the species check and merge with the full dataset
+
+spe <- read.csv(file.path("Data", "community_tidy-data","04_all_community_taxa_itis_checked.csv"),stringsAsFactors = F,na.strings =c("")) %>%
+  #change the name to scientific_name_check to avoid confusion with the scientific_name column in the comball dataset
+  dplyr::rename(scientific_name_check = scientific_name) %>%
+  dplyr::select(-species) # remove the species column since it is not needed for the merge
+
+#modify the species information from the list
+
+exc_df_v99 <- exc_df %>%
+    dplyr::mutate(scientific_name_check = scientific_name) %>%
+  dplyr::left_join(spe, by = "scientific_name_check") %>%
+    dplyr::mutate(kingdom = if_else(is.na(kingdom.y), kingdom.x, kingdom.y),
+                  phylum = if_else(is.na(phylum.y), phylum.x, phylum.y),
+                  class = if_else(is.na(class.y), class.x, class.y),
+                  order = if_else(is.na(order.y), order.x, order.y),
+                  family = if_else(is.na(family.y), family.x, family.y),
+                  genus = if_else(is.na(genus.y), genus.x, genus.y)) %>%
+  dplyr::select(all_of(col_list)) #reorder the columns to match the original order
+
+# merge the spe table with the full dataset, if spe's taxonomic information is missing, it will be filled with the information from the original table
+comball_v99 <- comball %>%
+   dplyr::mutate(scientific_name_check = scientific_name) %>%
+  dplyr::left_join(spe, by = "scientific_name_check") %>%
+    dplyr::mutate(kingdom = if_else(is.na(kingdom.y), kingdom.x, kingdom.y),
+                  phylum = if_else(is.na(phylum.y), phylum.x, phylum.y),
+                  class = if_else(is.na(class.y), class.x, class.y),
+                  order = if_else(is.na(order.y), order.x, order.y),
+                  family = if_else(is.na(family.y), family.x, family.y),
+                  genus = if_else(is.na(genus.y), genus.x, genus.y)) %>%
+  dplyr::select(all_of(col_list)) #reorder the columns to match the original order
+
 #### export and write to the drive
 # Export only the sparc data
 tidy_filename <- "03_harmonized_consumer_excretion_sparcsite.csv"
 tidy_path <- file.path("Data", "community_tidy-data", tidy_filename)
 
 # Export locally, only the new data
-write.csv(x = exc_df, na = '', row.names = F, file = tidy_path)
+write.csv(x = exc_df_v99, na = '', row.names = F, file = tidy_path)
 
 #export full data
 tidy_filename1 <- "04_harmonized_consumer_excretion_sparc_cnd_site.csv"
 tidy_path1 <- file.path("Data", "community_tidy-data", tidy_filename1)
 
 # Export locally
-write.csv(x = comball, na = '', row.names = F, file = tidy_path1)
+write.csv(x = comball_v99, na = '', row.names = F, file = tidy_path1)
 
 ###open the file
 # cfd <- read.csv(file.path("Data", "community_tidy-data","03_harmonized_consumer_excretion_sparcsite.csv"),stringsAsFactors = F,na.strings =c(""))
