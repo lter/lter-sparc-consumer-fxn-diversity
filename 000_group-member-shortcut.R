@@ -39,7 +39,8 @@ download_drive_folder(
 # Download the contents of the relevant Drive folder to the respective local folder
 download_drive_folder(
   folder_url = "https://drive.google.com/drive/folders/1n6iqs3aK2xWkROI8nPSVfk6ZkYPNpF7F",
-  local_subfolder = file.path("Data", "community_raw-data"))
+  local_subfolder = file.path("Data", "community_raw-data"),
+  pattern_in = "csv")
 
 ## -------------------------- ##
 # Download Raw Terrestrial Species Data ----
