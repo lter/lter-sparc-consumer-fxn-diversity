@@ -67,10 +67,7 @@ all_trt_v01 <- all_trt_v00 %>%
       .fns = ~ paste(setdiff(x = unique(.), y = NA), collapse = "; ")),
     .groups = "keep") %>% 
   # Ungroup
-  dplyr::ungroup() %>% 
-  # Make empty cells true NAs
-  dplyr::mutate(dplyr::across(.cols = dplyr::everything(),
-    .fns = ~ ifelse(nchar(.) == 0 | . %in% c("NA", "NaN"), yes = NA, no = .)))
+  dplyr::ungroup()
 
 # Check structure
 dplyr::glimpse(all_trt_v01)
@@ -79,6 +76,8 @@ dplyr::glimpse(all_trt_v01)
 all_long <- all_trt_v01 %>% 
   dplyr::mutate(dplyr::across(.cols = dplyr::everything(),
     .fns = as.character)) %>% 
+  dplyr::mutate(dplyr::across(.cols = dplyr::everything(),
+    .fns = ~ ifelse(nchar(.) == 0 | . %in% c("NA", "NaN"), yes = NA, no = .))) %>% 
   pivot_longer(cols = -source:-scientific_name,
     names_to = "trait_name",
     values_to = "trait_value_orig")
@@ -108,19 +107,67 @@ gen_long <- all_trt_v01 %>%
   # Flip to long format
   tidyr::pivot_longer(cols = -source:-genus,
     names_to = "trait_name",
-    values_to = "trait_value_genus") %>% 
-  # Replace empty cells with NA
-  dplyr::mutate(trait_value_genus = ifelse(nchar(trait_value_genus) == 0 | trait_value_genus %in% c("NA", "NaN"),
-    yes = NA, no = trait_value_genus))
+    values_to = "trait_value_genus")
 
 # Check structure
 dplyr::glimpse(gen_long)
 
-# Fewer rows than unaggregated one?
-nrow(all_long); nrow(gen_long)
+# Summarize to family
+## Done same way as genus so comments excluded for brevity
+fam_long <- all_trt_v01 %>% 
+  dplyr::group_by(source, order, class, family) %>% 
+  dplyr::summarise(
+    dplyr::across(.cols = dplyr::where(fn = is.numeric),
+      .fns = ~ mean(. , na.rm = T)),
+    dplyr::across(.cols = dplyr::where(fn = is.character),
+      .fns = ~ paste(setdiff(x = unique(.), y = NA), collapse = "; ")),
+    .groups = "keep") %>% 
+  dplyr::ungroup() %>% 
+  dplyr::mutate(dplyr::across(.cols = dplyr::everything(), .fns = as.character)) %>% 
+  tidyr::pivot_longer(cols = -source:-family,
+    names_to = "trait_name",
+    values_to = "trait_value_family")
 
+# Check structure
+dplyr::glimpse(fam_long)
 
-## EVENTUALLY DO AGGREGATION FOR OTHER TAX LEVELS HERE
+# Summarize to class
+## Done same way as genus so comments excluded for brevity
+cls_long <- all_trt_v01 %>% 
+  dplyr::group_by(source, order, class) %>% 
+  dplyr::summarise(
+    dplyr::across(.cols = dplyr::where(fn = is.numeric),
+      .fns = ~ mean(. , na.rm = T)),
+    dplyr::across(.cols = dplyr::where(fn = is.character),
+      .fns = ~ paste(setdiff(x = unique(.), y = NA), collapse = "; ")),
+    .groups = "keep") %>% 
+  dplyr::ungroup() %>% 
+  dplyr::mutate(dplyr::across(.cols = dplyr::everything(), .fns = as.character)) %>% 
+  tidyr::pivot_longer(cols = -source:-class,
+    names_to = "trait_name",
+    values_to = "trait_value_class")
+
+# Check structure
+dplyr::glimpse(cls_long)
+
+# Summarize to order
+## Done same way as genus so comments excluded for brevity
+ord_long <- all_trt_v01 %>% 
+  dplyr::group_by(source, order) %>% 
+  dplyr::summarise(
+    dplyr::across(.cols = dplyr::where(fn = is.numeric),
+      .fns = ~ mean(. , na.rm = T)),
+    dplyr::across(.cols = dplyr::where(fn = is.character),
+      .fns = ~ paste(setdiff(x = unique(.), y = NA), collapse = "; ")),
+    .groups = "keep") %>% 
+  dplyr::ungroup() %>% 
+  dplyr::mutate(dplyr::across(.cols = dplyr::everything(), .fns = as.character)) %>% 
+  tidyr::pivot_longer(cols = -source:-order,
+    names_to = "trait_name",
+    values_to = "trait_value_order")
+
+# Check structure
+dplyr::glimpse(ord_long)
 
 ## ------------------------------##
 # Join & Coalesce Trait data
@@ -131,10 +178,22 @@ all_long_v02 <- all_long %>%
   # Do actual joining
   dplyr::left_join(x = ., y = gen_long,
     by = c("source", "order", "class", "family", "genus", "trait_name")) %>% 
+  dplyr::left_join(x = ., y = fam_long,
+    by = c("source", "order", "class", "family", "trait_name")) %>% 
+  dplyr::left_join(x = ., y = cls_long,
+    by = c("source", "order", "class", "trait_name")) %>% 
+  dplyr::left_join(x = ., y = ord_long,
+    by = c("source", "order", "trait_name")) %>% 
+  # Make empty cells true NAs
+  dplyr::mutate(dplyr::across(.cols = dplyr::everything(),
+    .fns = ~ ifelse(nchar(.) == 0 | . %in% c("NA", "NaN"), yes = NA, no = .))) %>% 
   # Coalesce multiple resulting trait value columns
   dplyr::mutate(trait_value = dplyr::case_when(
     !is.na(trait_value_orig) ~ trait_value_orig,
     !is.na(trait_value_genus) ~ trait_value_genus,
+    !is.na(trait_value_family) ~ trait_value_family,
+    !is.na(trait_value_class) ~ trait_value_class,
+    !is.na(trait_value_order) ~ trait_value_order,
     T ~ NA)) %>% 
   # Ditch superseded trait value columns
   dplyr::select(-dplyr::starts_with("trait_value_")) %>% 
@@ -142,6 +201,9 @@ all_long_v02 <- all_long %>%
   dplyr::arrange(source, order, class, family, genus, scientific_name, trait_name) %>% 
   # Drop non-unique rows
   dplyr::distinct()
+
+# How many NAs does that resolve?
+sum(is.na(all_long$trait_value_orig)) - sum(is.na(all_long_v02$trait_value))
 
 # Check structure
 dplyr::glimpse(all_long_v02)
