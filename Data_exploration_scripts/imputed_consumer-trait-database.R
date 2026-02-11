@@ -33,12 +33,11 @@ rm(list = ls()); gc()
 # Read in master species list for all programs
 sp_pro_list <- read.csv(file.path("Data", "species_tidy-data", "23_species_master-spp-list.csv"))
 
-#####################
-#Load Trait Data
-####################
+## ------------------------------##
+# Load Trait Data ----
+## ------------------------------##
 
 ## Read in all trait databases and clean up if necessary
-
 all_trt <- read.csv(file.path("Data", "traits_tidy-data", "12_traits_wrangled.csv")) %>% #all trait databases are present expecet functionaltraitsmatirx -not harmonized
   dplyr::select( -epithet, -taxonomic.resolution, -taxon) %>% # select columns of interest
   dplyr::relocate(scientific_name, .before = migration) %>%
@@ -47,6 +46,94 @@ all_trt <- read.csv(file.path("Data", "traits_tidy-data", "12_traits_wrangled.cs
   dplyr::mutate(across(where(is.character), ~na_if(., ""))) %>%
   dplyr::mutate(across(where(is.numeric),~ ifelse(.x <=0, NA, .x)))%>% #replace NA indicators and instances of '0' with NA. otherwise keep original values
   dplyr::relocate(order, class, .before= family) 
+
+# Check structure
+dplyr::glimpse(all_trt)
+
+# Flip to long format
+all_long <- all_trt %>% 
+  dplyr::mutate(dplyr::across(.cols = dplyr::everything(),
+    .fns = as.character)) %>% 
+  pivot_longer(cols = -source:-scientific_name,
+    names_to = "trait_name",
+    values_to = "trait_value_orig")
+
+# Check structure
+dplyr::glimpse(all_long)
+
+## ------------------------------##
+# Summarize to Various Taxonomic Levels ----
+## ------------------------------##
+
+# Summarize to genus
+gen_long <- all_trt %>% 
+  # Ditch 'sex' column
+  dplyr::select(-sex) %>% 
+  # Group by desired columns
+  dplyr::group_by(source, order, class, family, genus) %>% 
+  # Summarize numeric & non-numeric columns
+  dplyr::summarise(
+    dplyr::across(.cols = dplyr::where(fn = is.numeric),
+      .fns = ~ mean(. , na.rm = T)),
+    dplyr::across(.cols = dplyr::where(fn = is.character),
+      .fns = ~ paste(setdiff(x = unique(.), y = NA), collapse = "; ")),
+    .groups = "keep") %>% 
+  # Ungroup
+  dplyr::ungroup() %>% 
+  # Make everything into characters
+  dplyr::mutate(dplyr::across(.cols = dplyr::everything(), .fns = as.character)) %>% 
+  # Flip to long format
+  tidyr::pivot_longer(cols = -source:-genus,
+    names_to = "trait_name",
+    values_to = "trait_value_genus") %>% 
+  # Replace empty cells with NA
+  dplyr::mutate(trait_value_genus = ifelse(nchar(trait_value_genus) == 0 | trait_value_genus %in% c("NA", "NaN"),
+    yes = NA, no = trait_value_genus))
+
+# Check structure
+dplyr::glimpse(gen_long)
+
+# Fewer rows than unaggregated one?
+nrow(all_long); nrow(gen_long)
+
+
+## EVENTUALLY DO AGGREGATION FOR OTHER TAX LEVELS HERE
+
+## ------------------------------##
+# Join & Coalesce Trait data
+## ------------------------------##
+
+# Join from lowest to highest resolution
+all_long_v02 <- all_long %>% 
+  # Do actual joining
+  dplyr::left_join(x = ., y = gen_long,
+    by = c("source", "order", "class", "family", "genus", "trait_name")) %>% 
+  # Coalesce multiple resulting trait value columns
+  dplyr::mutate(trait_value = dplyr::case_when(
+    !is.na(trait_value_orig) ~ trait_value_orig,
+    !is.na(trait_value_genus) ~ trait_value_genus,
+    T ~ NA)) %>% 
+  # Ditch superseded trait value columns
+  dplyr::select(-dplyr::starts_with("trait_value_"))
+
+# Check structure
+dplyr::glimpse(all_long_v02)
+
+# Pivot back to wide format
+all_trt_v02 <- all_long_v02 %>% 
+  dplyr::arrange(source, order, class, family, genus, scientific_name, trait_name) %>% 
+  dplyr::distinct() %>% 
+  tidyr::pivot_wider(names_from = trait_name,
+    values_from = trait_value)
+
+# Check structure
+dplyr::glimpse(all_trt_v02)
+
+# End ----
+
+## -------------------------------------------------------------##
+# BASEMENT ----
+## -------------------------------------------------------------##
 
 #filter_birds <- all_trt %>% 
 #  dplyr::filter(source %in% c("birdbase_traits_preclean.csv", "elton_traits_preclean.csv", "oleksii2024_preclean.csv"))
