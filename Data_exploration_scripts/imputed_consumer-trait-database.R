@@ -41,13 +41,33 @@ sp_pro_list <- read.csv(file.path("Data", "species_tidy-data", "23_species_maste
 
 all_trt <- read.csv(file.path("Data", "traits_tidy-data", "12_traits_wrangled.csv")) %>% #all trait databases are present expecet functionaltraitsmatirx -not harmonized
   dplyr::select( -epithet, -taxonomic.resolution, -taxon) %>% # select columns of interest
+  dplyr::relocate(scientific_name, .before = migration) %>%
   dplyr::filter(scientific_name != "") %>% #remove traits without scientific name 
   dplyr::mutate_if(is.integer, as.numeric) %>% #change all columns that are integer to numeric
   dplyr::mutate(across(where(is.character), ~na_if(., ""))) %>%
-  dplyr::mutate(across(where(is.numeric),~ ifelse(.x <=0, NA, .x) #replace NA indicators and instances of '0' with NA. otherwise keep original values
-    )
-  ) %>%
-  dplyr::relocate(order, .before= family)
+  dplyr::mutate(across(where(is.numeric),~ ifelse(.x <=0, NA, .x)))%>% #replace NA indicators and instances of '0' with NA. otherwise keep original values
+  dplyr::relocate(order, class, .before= family) 
+
+#filter_birds <- all_trt %>% 
+#  dplyr::filter(source %in% c("birdbase_traits_preclean.csv", "elton_traits_preclean.csv", "oleksii2024_preclean.csv"))
+  
+
+#all_trt_long pivot %>% summarize 
+
+#join each and coalesce if needed 
+
+#all_genus_long pivot %>% summarize 
+#for character columns <- (. = paste(unique(.), sep = “; “))
+
+#family_pivot_long  $>% summarize
+#join each and coalesce if needed 
+
+#order_pivot long %>% summarize 
+  
+#join each and coalesce if needed 
+
+
+#level of imputation at the end based on data object that had taxon object in it
 
 #---------------- end loading data -------------------
 
@@ -480,4 +500,4 @@ write.csv(x = consumer_imputed_traits_v99, na = '', row.names = F, file = consum
 
 # End ----
 
-write.csv(master_sp_dup_names, "/Users/shalandagrier/Documents/Post Doc Projects/CFD_master_sp_dup_names.csv")
+#write.csv(master_sp_dup_names, "/Users/shalandagrier/Documents/Post Doc Projects/CFD_master_sp_dup_names.csv")
