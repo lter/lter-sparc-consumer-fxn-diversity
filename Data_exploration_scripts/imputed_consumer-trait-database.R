@@ -16,7 +16,9 @@
 #----------------------------------------------------------------------------
 #if number is <=0 make NA need to go back and do this 
 # Load libraries
-librarian::shelf(tidyverse, dplyr, funbiogeo, ggplot2)
+librarian::shelf(tidyverse, dplyr, 
+  #funbiogeo, # This library doesn't load for NJL; is it from GitHub (rather than CRAN)?
+  ggplot2)
 
 # Get set up
 source("00_setup.R")
@@ -24,34 +26,57 @@ source("00_setup.R")
 # Clear environment & collect garbage
 rm(list = ls()); gc()
 
-
-###################
-#Load Consumer Taxa List  
-##################
-
+## ------------------------------##
+#Load Consumer Taxa List ----
+## ------------------------------##
 
 # Read in master species list for all programs
 sp_pro_list <- read.csv(file.path("Data", "species_tidy-data", "23_species_master-spp-list.csv"))
+
+# Check structure
+dplyr::glimpse(sp_pro_list)
 
 ## ------------------------------##
 # Load Trait Data ----
 ## ------------------------------##
 
 ## Read in all trait databases and clean up if necessary
-all_trt <- read.csv(file.path("Data", "traits_tidy-data", "12_traits_wrangled.csv")) %>% #all trait databases are present expecet functionaltraitsmatirx -not harmonized
-  dplyr::select( -epithet, -taxonomic.resolution, -taxon) %>% # select columns of interest
-  dplyr::relocate(scientific_name, .before = migration) %>%
-  dplyr::filter(scientific_name != "") %>% #remove traits without scientific name 
-  dplyr::mutate_if(is.integer, as.numeric) %>% #change all columns that are integer to numeric
-  dplyr::mutate(across(where(is.character), ~na_if(., ""))) %>%
-  dplyr::mutate(across(where(is.numeric),~ ifelse(.x <=0, NA, .x)))%>% #replace NA indicators and instances of '0' with NA. otherwise keep original values
-  dplyr::relocate(order, class, .before= family) 
+all_trt_v00 <- read.csv(file.path("Data", "traits_tidy-data", "12_traits_wrangled.csv"))
+  
+# Check structure
+dplyr::glimpse(all_trt_v00)
+
+# Wrangle that to be more useful
+all_trt_v01 <- all_trt_v00 %>% 
+  # Fill missing scientific names (if any)
+  dplyr::mutate(scientific_name = dplyr::case_when(
+    !is.na(scientific_name) ~ scientific_name,
+    !is.na(genus) & !is.na(epithet) ~ paste(genus, epithet),
+    !is.na(taxon) ~ taxon,
+    !is.na(common_name) ~ common_name,
+    T ~ NA)) %>% 
+  # Remove unwanted columns
+  dplyr::select(-epithet, -taxonomic.resolution, -taxon, -sex, -common_name) %>% 
+  # Group by desired columns
+  dplyr::group_by(source, order, class, family, genus, scientific_name) %>% 
+  # Summarize numeric & non-numeric columns
+  dplyr::summarise(
+    dplyr::across(.cols = dplyr::where(fn = is.numeric),
+      .fns = ~ mean(. , na.rm = T)),
+    dplyr::across(.cols = dplyr::where(fn = is.character),
+      .fns = ~ paste(setdiff(x = unique(.), y = NA), collapse = "; ")),
+    .groups = "keep") %>% 
+  # Ungroup
+  dplyr::ungroup() %>% 
+  # Make empty cells true NAs
+  dplyr::mutate(dplyr::across(.cols = dplyr::everything(),
+    .fns = ~ ifelse(nchar(.) == 0 | . %in% c("NA", "NaN"), yes = NA, no = .)))
 
 # Check structure
-dplyr::glimpse(all_trt)
+dplyr::glimpse(all_trt_v01)
 
 # Flip to long format
-all_long <- all_trt %>% 
+all_long <- all_trt_v01 %>% 
   dplyr::mutate(dplyr::across(.cols = dplyr::everything(),
     .fns = as.character)) %>% 
   pivot_longer(cols = -source:-scientific_name,
@@ -66,9 +91,7 @@ dplyr::glimpse(all_long)
 ## ------------------------------##
 
 # Summarize to genus
-gen_long <- all_trt %>% 
-  # Ditch 'sex' column
-  dplyr::select(-sex) %>% 
+gen_long <- all_trt_v01 %>% 
   # Group by desired columns
   dplyr::group_by(source, order, class, family, genus) %>% 
   # Summarize numeric & non-numeric columns
@@ -114,15 +137,17 @@ all_long_v02 <- all_long %>%
     !is.na(trait_value_genus) ~ trait_value_genus,
     T ~ NA)) %>% 
   # Ditch superseded trait value columns
-  dplyr::select(-dplyr::starts_with("trait_value_"))
+  dplyr::select(-dplyr::starts_with("trait_value_")) %>% 
+  # Sort by taxa info
+  dplyr::arrange(source, order, class, family, genus, scientific_name, trait_name) %>% 
+  # Drop non-unique rows
+  dplyr::distinct()
 
 # Check structure
 dplyr::glimpse(all_long_v02)
 
 # Pivot back to wide format
 all_trt_v02 <- all_long_v02 %>% 
-  dplyr::arrange(source, order, class, family, genus, scientific_name, trait_name) %>% 
-  dplyr::distinct() %>% 
   tidyr::pivot_wider(names_from = trait_name,
     values_from = trait_value)
 
