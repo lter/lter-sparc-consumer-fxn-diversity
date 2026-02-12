@@ -143,6 +143,7 @@ dplyr::glimpse(trt_v7)
 ## --------------------------- ##
 
 # Some columns are essentially the same but different units
+## NOTE THAT THIS STEP IS TIME-CONSUMING; Go get a cup of coffee/etc. for a minute after running
 trt_v8 <- trt_v7 %>%
   ## Age traits - convert days to years & then ditch superseded columns\
   ### Life span
@@ -317,30 +318,30 @@ supportR::diff_check(old = names(trt_v7), new = names(trt_v8))
 ## --------------------------- ##
 
 # Need to get a tidy scientific name column
-trt_v9 <- trt_v8 |> 
+trt_v9 <- trt_v8 %>% 
   # Fill in missing taxonomic info where possible
   dplyr::mutate(family = dplyr::case_when(
     is.na(family) & tolower(taxonomic.resolution) == "family" ~ taxon,
-    T ~ family)) |> 
+    T ~ family)) %>% 
   dplyr::mutate(genus = dplyr::case_when(
     is.na(genus) & tolower(taxonomic.resolution) == "genus" ~ taxon,
-    T ~ genus)) |> 
+    T ~ genus)) %>% 
   # Identify scientific names where possible
   dplyr::mutate(scientific_name = dplyr::case_when(
+    !is.na(scientific_name) ~ scientific_name,
     stringr::str_detect(string = taxon, pattern = " ") ~ taxon,
     stringr::str_detect(string = taxon, pattern = "_") ~ gsub(pattern = "_", replacement = ".", x = taxon),
     !is.na(genus) & !is.na(species) ~ paste0(genus, " ", species),
     !is.na(genus) & is.na(species) ~ paste0(genus, " sp."),
-    T ~ NA), .after = family) |> 
+    T ~ NA), .after = family) %>% 
   # Rename remaining columns better (or ditch 'em)
   dplyr::rename(epithet = species)
 
 # Check that out
 dplyr::glimpse(trt_v9)
 
-# join the master species list with trt_v9
 ## ------------------------------ ##
-#Load Consumer Taxa List ----
+# Prepare Consumer Taxa List ----
 ## ------------------------------ ##
 
 #need to run species harmonization and wrangling first 
@@ -357,7 +358,11 @@ dplyr::glimpse(sp_pro_list)
 #gen_pro_list <- sp_pro_list %>%
 #  dplyr::select(genus)
 
-#join by 
+## ------------------------------ ##
+# Join Traits w/ Consumer Taxa List ----
+## ------------------------------ ##
+
+# Connect trait info with consumer species list
 #trt_v10 <- trt_v9 %>%  #128048 obs
 #  select(-class, -order) %>%
   #left_join(x=., y = trt_v9, by = join_by(scientific_name, genus, family)) %>% ignore 
