@@ -335,8 +335,8 @@ trt_v9 <- trt_v8 |>
 # Check that out
 dplyr::glimpse(trt_v9)
 
-birds_sciname_check <- trt_v9 %>%
-  dplyr::filter(source %in% c("elton_traits_preclean.csv", "birdbase_traits_preclean.csv", "oleksii2024_preclean.csv"))
+#birds_sciname_check <- trt_v9 %>%
+#  dplyr::filter(source %in% c("elton_traits_preclean.csv", "birdbase_traits_preclean.csv", "oleksii2024_preclean.csv"))
 
 ## --------------------------- ##
 # Export ----
