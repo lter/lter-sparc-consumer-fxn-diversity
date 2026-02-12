@@ -344,14 +344,14 @@ dplyr::glimpse(trt_v9)
 # Prepare Consumer Taxa List ----
 ## ------------------------------ ##
 
-#need to run species harmonization and wrangling first 
 # Read in master species list for all programs
+## Need to run species harmonization and wrangling first 
 sp_pro_list <- read.csv(file.path("Data", "species_tidy-data", "23_species_master-spp-list.csv"))
+
+## NOTE FOR LATER: remove duplicates from step 23 by running names through ITIS in 22_
 
 # Check structure
 dplyr::glimpse(sp_pro_list)
-
-# Note for later remove duplicates from step 23 by running names through ITIS in 22_
 
 # Create a data object of only genus and higher classifications
 gen_pro_list <- sp_pro_list %>% 
@@ -371,39 +371,42 @@ ord_pro_list <- fam_pro_list %>%
   dplyr::distinct() %>% 
   dplyr::filter(!is.na(order) & nchar(order) != 0)
 
-# And one without order
-cls_pro_list <- ord_pro_list %>% 
-  dplyr::select(-order) %>% 
-  dplyr::distinct() %>% 
-  dplyr::filter(!is.na(class) & nchar(class) != 0)
-
 ## ------------------------------ ##
 # Join Traits w/ Consumer Taxa List ----
 ## ------------------------------ ##
 
 # Connect trait info with consumer species list
-#trt_v10 <- trt_v9 %>%  #128048 obs
-#  select(-class, -order) %>%
-  #left_join(x=., y = trt_v9, by = join_by(scientific_name, genus, family)) %>% ignore 
-  #left_join(x=., y = gen_trt_list, by = join_by(scientific_name, genus))       ignore
-#  left_join(x=., y= sp_pro_list, by = join_by(scientific_name, genus, family)) %>%
-#  left_join(x=., y= gen_pro_list, by = join_by(scientific_name, genus)) #%>%
-  #coalesce() %>%
+trt_v10 <- trt_v9 %>% 
+  # Get taxonomic columns grouped together
+  dplyr::relocate(class, order, family, genus, scientific_name,
+    .before = dplyr::everything()) %>% 
+  ## Attach most finely-detailed (where possible)
+  dplyr::left_join(x = ., y = sp_pro_list, 
+    by = c("class", "order", "family", "genus", "scientific_name")) %>% 
+  ## Ditch unwanted columns
+  dplyr::select(-project:-phylum) %>% 
+  # Attach genus level information
+  dplyr::left_join(x = ., y = gen_pro_list,
+    by = c("class", "order", "family", "genus")) %>% 
+  # And family-level
+  dplyr::left_join(x = ., y = fam_pro_list,
+    by = c("class", "order", "family")) %>% 
+  # And order-level
+  dplyr::left_join(x = ., y = ord_pro_list,
+    by = c("class", "order"))
 
-length(unique(trt_v10$scientific_name))
+# Check structure
+dplyr::glimpse(trt_v10)
 
-sort(unique(trt_v9$class))
-
-#quality check for NA
-
-
+# Does that resolve any missing values?
+sum(is.na(trt_v9$order)); sum(is.na(trt_v10$order))
 
 ## --------------------------- ##
 # Export ----
 ## --------------------------- ##
 
 # Make a final object
-trt_v99 <- trt_v9
+trt_v99 <- trt_v10
 
 # Check structure
 dplyr::glimpse(trt_v99)
