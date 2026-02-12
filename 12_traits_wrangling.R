@@ -353,10 +353,29 @@ dplyr::glimpse(sp_pro_list)
 
 # Note for later remove duplicates from step 23 by running names through ITIS in 22_
 
+# Create a data object of only genus and higher classifications
+gen_pro_list <- sp_pro_list %>% 
+  dplyr::select(class, order, family, genus) %>% 
+  dplyr::distinct() %>% 
+  dplyr::filter(!is.na(genus) & nchar(genus) != 0)
 
-#create a df for genus names only 
-#gen_pro_list <- sp_pro_list %>%
-#  dplyr::select(genus)
+# Make another without genera
+fam_pro_list <- gen_pro_list %>% 
+  dplyr::select(-genus) %>% 
+  dplyr::distinct() %>% 
+  dplyr::filter(!is.na(family) & nchar(family) != 0)
+
+# And one without family
+ord_pro_list <- fam_pro_list %>% 
+  dplyr::select(-family) %>% 
+  dplyr::distinct() %>% 
+  dplyr::filter(!is.na(order) & nchar(order) != 0)
+
+# And one without order
+cls_pro_list <- ord_pro_list %>% 
+  dplyr::select(-order) %>% 
+  dplyr::distinct() %>% 
+  dplyr::filter(!is.na(class) & nchar(class) != 0)
 
 ## ------------------------------ ##
 # Join Traits w/ Consumer Taxa List ----
