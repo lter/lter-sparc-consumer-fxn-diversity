@@ -335,7 +335,10 @@ trt_v9 <- trt_v8 %>%
     !is.na(genus) & is.na(species) ~ paste0(genus, " sp."),
     T ~ NA), .after = family) %>% 
   # Rename remaining columns better (or ditch 'em)
-  dplyr::rename(epithet = species)
+  dplyr::rename(epithet = species) %>% 
+  # Make all missing values true NAs
+  dplyr::mutate(dplyr::across(.cols = dplyr::everything(),
+    .fns = ~ ifelse(nchar(.) == 0, yes = NA, no = .)))
 
 # Check that out
 dplyr::glimpse(trt_v9)
@@ -346,16 +349,21 @@ dplyr::glimpse(trt_v9)
 
 # Read in master species list for all programs
 ## Need to run species harmonization and wrangling first 
-sp_pro_list <- read.csv(file.path("Data", "species_tidy-data", "23_species_master-spp-list.csv"))
+sp_pro_list_v0 <- read.csv(file.path("Data", "species_tidy-data", "23_species_master-spp-list.csv"))
 
 ## NOTE FOR LATER: remove duplicates from step 23 by running names through ITIS in 22_
+
+# Do some minor pre-emptive tidying
+sp_pro_list <- sp_pro_list_v0 %>% 
+  dplyr::select(class, order, family, genus, scientific_name) %>% 
+  dplyr::distinct()
 
 # Check structure
 dplyr::glimpse(sp_pro_list)
 
 # Create a data object of only genus and higher classifications
 gen_pro_list <- sp_pro_list %>% 
-  dplyr::select(class, order, family, genus) %>% 
+  dplyr::select(-scientific_name) %>% 
   dplyr::distinct() %>% 
   dplyr::filter(!is.na(genus) & nchar(genus) != 0)
 
@@ -364,6 +372,9 @@ fam_pro_list <- gen_pro_list %>%
   dplyr::select(-genus) %>% 
   dplyr::distinct() %>% 
   dplyr::filter(!is.na(family) & nchar(family) != 0)
+
+# Check structure
+dplyr::glimpse(fam_pro_list)
 
 # And one without family
 ord_pro_list <- fam_pro_list %>% 
