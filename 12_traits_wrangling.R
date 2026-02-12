@@ -335,8 +335,41 @@ trt_v9 <- trt_v8 |>
 # Check that out
 dplyr::glimpse(trt_v9)
 
-#birds_sciname_check <- trt_v9 %>%
-#  dplyr::filter(source %in% c("elton_traits_preclean.csv", "birdbase_traits_preclean.csv", "oleksii2024_preclean.csv"))
+# join the master species list with trt_v9
+## ------------------------------ ##
+#Load Consumer Taxa List ----
+## ------------------------------ ##
+
+#need to run species harmonization and wrangling first 
+# Read in master species list for all programs
+sp_pro_list <- read.csv(file.path("Data", "species_tidy-data", "23_species_master-spp-list.csv"))
+
+# Check structure
+dplyr::glimpse(sp_pro_list)
+
+# Note for later remove duplicates from step 23 by running names through ITIS in 22_
+
+
+#create a df for genus names only 
+#gen_pro_list <- sp_pro_list %>%
+#  dplyr::select(genus)
+
+#join by 
+#trt_v10 <- trt_v9 %>%  #128048 obs
+#  select(-class, -order) %>%
+  #left_join(x=., y = trt_v9, by = join_by(scientific_name, genus, family)) %>% ignore 
+  #left_join(x=., y = gen_trt_list, by = join_by(scientific_name, genus))       ignore
+#  left_join(x=., y= sp_pro_list, by = join_by(scientific_name, genus, family)) %>%
+#  left_join(x=., y= gen_pro_list, by = join_by(scientific_name, genus)) #%>%
+  #coalesce() %>%
+
+length(unique(trt_v10$scientific_name))
+
+sort(unique(trt_v9$class))
+
+#quality check for NA
+
+
 
 ## --------------------------- ##
 # Export ----
