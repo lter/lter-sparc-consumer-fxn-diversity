@@ -52,6 +52,21 @@ master_v1 <- dplyr::bind_rows(aqu_v2, ter_v2)
 # Check structure
 dplyr::glimpse(master_v1)
 
+
+# check for duplicates
+unique_spe <- master_v1 %>%
+  distinct(project, scientific_name, kingdom, phylum, class, order, family, genus) 
+
+duplicate <- unique_spe %>%
+  distinct(scientific_name, kingdom, phylum, class, order, family, genus) %>%
+  dplyr::group_by(scientific_name) %>%
+  dplyr::summarise(count = n()) %>%
+  dplyr::filter(count > 1)%>%
+  #merge back to get the project names
+  left_join(unique_spe, by = "scientific_name") 
+
+#write.csv(x = duplicate, na = '', row.names = F, file = file.path("Data", "species_tidy-data", "23_species_master-spp-list_duplicates.csv"))
+
 ## --------------------------- ##
 # Export ----
 ## --------------------------- ##

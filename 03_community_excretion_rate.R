@@ -233,16 +233,7 @@ spe <- read.csv(file.path("Data", "community_tidy-data","04_all_community_taxa_i
 
 #modify the species information from the list
 
-exc_df_v99 <- exc_df %>%
-    dplyr::mutate(scientific_name_check = scientific_name) %>%
-  dplyr::left_join(spe, by = "scientific_name_check") %>%
-    dplyr::mutate(kingdom = if_else(is.na(kingdom.y), kingdom.x, kingdom.y),
-                  phylum = if_else(is.na(phylum.y), phylum.x, phylum.y),
-                  class = if_else(is.na(class.y), class.x, class.y),
-                  order = if_else(is.na(order.y), order.x, order.y),
-                  family = if_else(is.na(family.y), family.x, family.y),
-                  genus = if_else(is.na(genus.y), genus.x, genus.y)) %>%
-  dplyr::select(all_of(col_list)) #reorder the columns to match the original order
+
 
 # merge the spe table with the full dataset, if spe's taxonomic information is missing, it will be filled with the information from the original table
 comball_v99 <- comball %>%
@@ -257,12 +248,6 @@ comball_v99 <- comball %>%
   dplyr::select(all_of(col_list)) #reorder the columns to match the original order
 
 #### export and write to the drive
-# Export only the sparc data
-tidy_filename <- "03_harmonized_consumer_excretion_sparcsite.csv"
-tidy_path <- file.path("Data", "community_tidy-data", tidy_filename)
-
-# Export locally, only the new data
-write.csv(x = exc_df_v99, na = '', row.names = F, file = tidy_path)
 
 #export full data
 tidy_filename1 <- "04_harmonized_consumer_excretion_sparc_cnd_site.csv"
@@ -272,7 +257,6 @@ tidy_path1 <- file.path("Data", "community_tidy-data", tidy_filename1)
 write.csv(x = comball_v99, na = '', row.names = F, file = tidy_path1)
 
 ###open the file
-# cfd <- read.csv(file.path("Data", "community_tidy-data","03_harmonized_consumer_excretion_sparcsite.csv"),stringsAsFactors = F,na.strings =c(""))
 # all <- read.csv(file.path("Data", "community_tidy-data","04_harmonized_consumer_excretion_sparc_cnd_site.csv"),stringsAsFactors = F,na.strings =c(""))
 
 

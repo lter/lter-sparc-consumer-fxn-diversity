@@ -17,6 +17,8 @@ rm(list = ls()); gc()
 # Load Data ----
 ## --------------------------- ##
 
+run_species_check <- "N"
+
 # Read in the harmonized species data
 spp_v1 <- read.csv(file.path("Data", "species_tidy-data", "21_species_harmonized.csv")) 
 
@@ -95,105 +97,139 @@ spp_v4 <- spp_v3 |>
 # Check structure
 dplyr::glimpse(spp_v4)
 
-## --------------------------- ##
-# ITIS Species Checks ----
-## --------------------------- ##
+##########Only run this if we need to check the species against ITIS###############
 
-# Should these species be checked against ITIS?
-run_taxa_check <- FALSE
 
-# If desired (see prior line), check the species against ITIS
-if(run_taxa_check == T){
+if (run_species_check =="Y"){
 
-  # Make a list for storing outputs
-  itis_list <- list()
+ #read in the species check file if it exists, if not create a new one and run the check. This file will be updated with the new species that are added to the dataset and will be used for future checks.
+  if (file.exists(file.path("Data", "species_tidy-data", "22_terrestrial_species_ITIS-taxonomy.csv"))) {
+    message("Species check file already exists. Loading existing file.")
+   spe_check <- read.csv(file.path("Data", "species_tidy-data", "22_terrestrial_species_ITIS-taxonomy.csv"),stringsAsFactors = F,na.strings =c(""))
+   #spe_check <- spe_check %>%
+   #  select(-db) %>%
+   #  rename(scientific_name = query)
+  } else {
+    message("Species check file does not exist. Creating new file and running species check.")
+    spe_check <- data.frame(scientific_name = character(),
+                            kingdom = character(),
+                            phylum = character(),
+                            class = character(),
+                            order = character(),
+                            family = character(),
+                            genus = character(),
+                            species = character(),
+                            stringsAsFactors = FALSE)
+  }
 
-  # Pare down to just unique scientific names
-  all_spp <- spp_v4 |>   
-    dplyr::pull(scientific_name) |> 
-    unique() |> sort()
+spe_check 1 <- spe_check %>%
+  dplyr::filter(!is.na(kingdom)) 
 
-for (i in seq_along(all_spp)) {
-  # i <- 1
-  
-  # Grab that species name
-  sp_name <- all_spp[i]
+taxa_check <- spp_v4 %>%
+ #select the scientific_name column. This column originally filled based on LTER sites reported species names
+ dplyr::select(scientific_name)%>%
+#Grab all unique species names
+ mutate(scientific_name = sub("\\s+spp?\\.?$", "", scientific_name),
+        scientific_name = trimws(scientific_name)) %>%
+ dplyr::distinct() %>%
+#exclude the species that have already been checked and have a match in the spe_check1 dataset
+ dplyr::filter(!scientific_name %in% spe_check1$scientific_name) %>%
+#Create an empty placeholder column to fill later
+ dplyr::mutate(kingdom = NA,
+               phylum = NA,
+               class = NA,
+               order = NA,
+               family = NA,
+               genus = NA,
+               species = NA)
+
+
+### add kingdom, phylum, order, family, genus and species name using taxize
+
+for (i in 1:length(taxa_check$scientific_name)) {
+
+  sp <- taxa_check[i, ]$scientific_name
 
   # Query species taxonomic information with error handling
-  located_species_names <- tryCatch(
+  identified_species_names <- tryCatch(
     taxize::tax_name(
-      sci = sp_name,
+      sci = sp,
       get = c("kingdom", "phylum", "class", "order", "family", "genus", "species"),
-      db = "itis", accepted = TRUE, ask = FALSE),
+      db = "itis",
+      accepted = TRUE,
+      ask = FALSE
+    ),
     error = function(e) NULL
   )
-  
-  # Add this to the list
-  itis_list[[sp_name]] <- located_species_names } # close the loop
-  
-  # Unlist the list
-  itis_df <- purrr::list_rbind(x = itis_list)
 
-  # Check structure
-  dplyr::glimpse(itis_df)
+  # Fill taxonomy info safely
+  taxa_check[i, ]$kingdom <- if (!is.null(identified_species_names)) paste0(identified_species_names$kingdom, collapse = "") else NA
+  taxa_check[i, ]$phylum  <- if (!is.null(identified_species_names)) paste0(identified_species_names$phylum, collapse = "") else NA
+  taxa_check[i, ]$class   <- if (!is.null(identified_species_names)) paste0(identified_species_names$class, collapse = "") else NA
+  taxa_check[i, ]$order   <- if (!is.null(identified_species_names)) paste0(identified_species_names$order, collapse = "") else NA
+  taxa_check[i, ]$family  <- if (!is.null(identified_species_names)) paste0(identified_species_names$family, collapse = "") else NA
+  taxa_check[i, ]$genus   <- if (!is.null(identified_species_names)) paste0(identified_species_names$genus, collapse = "") else NA
+  taxa_check[i, ]$species <- if (!is.null(identified_species_names)) paste0(identified_species_names$species, collapse = "") else NA
 
-  # Export a CSV of species where we fail to identify info from ITIS
-  itis_missing <- dplyr::filter(itis_df, is.na(kingdom))
-  write.csv(x = itis_missing, na = '', row.names = F,
-    file = file.path("Data", "checks", "22_species-check_missing-from-ITIS.csv"))
+} #close the for loop
+
+# --- Error check at the end ---
+# Find which species didn’t get a match
+unmatched <- taxa_check[taxa_check$kingdom=="NA", "scientific_name"]
+
+if (length(unmatched) > 0) {
+  message("Warning: No ITIS records found for these species:\n",
+          paste(unmatched, collapse = ", "))
+} else {
+  message("All species matched successfully!")
+}
+
+taxa_check_v2 <- taxa_check
+#Replace the string "NA" with actual NA values
+taxa_check_v2[taxa_check_v2 == "NA"] <- NA
+
+#combine with spe_check1 to get the full list of species and their taxonomic information
+taxa_check_v3<- rbind(spe_check1, taxa_check_v2) %>%
+  arrange(kingdom, phylum, class, order, family, genus, species)
   
-  # Get just the non-missing ITIS info
-  itis_actual <- dplyr::filter(itis_df, !is.na(kingdom))
+write.csv(x = taxa_check_v3, row.names = F, na = '',
+          file = file.path("Data", "species_tidy-data", "22_terrestrial_species_ITIS-taxonomy.csv"))
+} # close the species check
 
-  # Export it
-  write.csv(x = itis_actual, na = '', row.names = F,
-    file = file.path("Data", "species_tidy-data", "22_species_ITIS-taxonomy.csv"))  
-    
-} # Close the conditional
 
 # If not re-checking ITIS, read in last check's outputs
-itis_actual <- read.csv(file = file.path("Data", "species_tidy-data", "22_species_ITIS-taxonomy.csv"))
+itis_actual <- read.csv(file = file.path("Data", "species_tidy-data", "22_terrestrial_species_ITIS-taxonomy.csv")) %>%
+  #change the name to scientific_name_check to avoid confusion with the scientific_name column in the comball dataset
+  dplyr::rename(scientific_name_check = scientific_name) %>%
+  dplyr::select(-species) # remove the species column since it is not needed for the merge
 
 # Check structure
 dplyr::glimpse(itis_actual)
 
+#extract the column name list from the spp_v4 dataset to use for the merge later
+col_list <- colnames(spp_v4)
+
 # Safely join to the data
-spp_v5 <- spp_v4 |> 
-  dplyr::left_join(y = itis_actual, by = c("scientific_name" = "query"))
+spp_v5 <- spp_v4 %>%
+  dplyr::mutate(scientific_name_check = scientific_name) %>%
+  dplyr::left_join(itis_actual, by = "scientific_name_check") %>%
+    dplyr::mutate(kingdom = if_else(is.na(kingdom.y), kingdom.x, kingdom.y),
+                  phylum = if_else(is.na(phylum.y), phylum.x, phylum.y),
+                  class = if_else(is.na(class.y), class.x, class.y),
+                  order = if_else(is.na(order.y), order.x, order.y),
+                  family = if_else(is.na(family.y), family.x, family.y),
+                  genus = if_else(is.na(genus.y), genus.x, genus.y)) %>%
+  dplyr::select(all_of(col_list))
 
 # Check structure of the result
 dplyr::glimpse(spp_v5)
-
-## --------------------------- ##
-# Tidy Integrated ITIS Info ----
-## --------------------------- ##
-
-# Now that we've combined it, let's do some tidying of the 'with ITIS' data
-spp_v6 <- spp_v5 |> 
-  dplyr::mutate(kingdom = dplyr::coalesce(kingdom.x, kingdom.y),
-    phylum = dplyr::coalesce(phylum.x, phylum.y),
-    class = dplyr::coalesce(class.x, class.y),
-    order = dplyr::coalesce(order.x, order.y),
-    family = dplyr::coalesce(family.x, family.y),
-    genus = dplyr::coalesce(genus.x, genus.y)) |> 
-  # Tidy specific epithet info too
-  tidyr::separate_wider_delim(cols = species, delim = " ", 
-    names = c("itis_genus", "itis_epithet")) |> 
-  dplyr::mutate(epithet = dplyr::coalesce(specific_epithet, itis_epithet)) |> 
-  # Relocate columns slightly
-  dplyr::relocate(dplyr::starts_with("itis_"), .after = epithet) |> 
-    # Ditch superseded/unwanted columns
-  dplyr::select(-dplyr::ends_with(c(".x", ".y")), -db, -specific_epithet)
-
-# Check structure
-dplyr::glimpse(spp_v6)
 
 ## --------------------------- ##
 # Export ----
 ## --------------------------- ##
 
 # Make one last version of the data
-spp_v99 <- spp_v6
+spp_v99 <- spp_v5
 
 # Check structure
 dplyr::glimpse(spp_v99)
