@@ -113,7 +113,8 @@ dplyr::glimpse(trt_v5)
 
 # Identify all columns that should contain numbers
 trt_numcols <- c(setdiff(x = names(trt_v5),
-                         y = c("source", "family", "genus", "species", 
+                         y = c("source", "order", "class", "family", "genus", "species", 
+                               "scientific_name", "common_name", 
                                "taxonomic.resolution", "taxon", "sex", "migration")))
 (trt_numcols <- trt_numcols[stringr::str_detect(string = trt_numcols, pattern = "_ordinal") != T])
 
@@ -121,8 +122,10 @@ trt_numcols <- c(setdiff(x = names(trt_v5),
 supportR::num_check(data = trt_v5, col = trt_numcols)
 
 # Fix non-numbers
-trt_v6 <- trt_v5
-## No such fixing currently needed
+trt_v6 <- trt_v5 %>% 
+  # Fix UK comma-as-decimal issue
+  dplyr::mutate(dplyr::across(.cols = dplyr::all_of(trt_numcols),
+    .fns = ~ gsub(pattern = ",", replacement = ".", x = .)))
 
 # Re-check for non-numbers in these
 supportR::num_check(data = trt_v6, col = trt_numcols)
