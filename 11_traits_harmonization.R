@@ -39,9 +39,7 @@ dplyr::glimpse(trtlong_key)
 
 # Harmonize the 'regular' trait data
 trt_v1 <- ltertools::harmonize(key = trt_key, data_format = "csv",
-                               raw_folder = file.path("Data", "traits_raw-data"))
-
-# Check structure
+                               raw_folder = file.path("Data", "traits_raw-data")) #Check structure
 dplyr::glimpse(trt_v1)
 
 # Do the same for the long-format traits
@@ -67,7 +65,7 @@ trtlong_v2 <- trtlong_v1 %>%
   dplyr::filter(trait_name %in% c("Mass", "Activity", "wetWeight", 
                                   "bodyLengthMax", "reproductionMode", 
                                   "clutchSize", "eggWeight", "trophicGroup", "fecundity",
-                                  "respirationRate_15C")) %>% 
+                                  "respirationRate_15C", "dryWeight")) %>% 
   # Standardize trait names
   dplyr::mutate(trait_std = dplyr::case_when(
     ## Reproductive traits
@@ -77,6 +75,7 @@ trtlong_v2 <- trtlong_v1 %>%
     ## Size traits
     trait_name %in% c("Mass") ~ "mass_adult",
     trait_name %in% c("wetWeight") ~ "weight_adult.wet",
+    trait_name %in% c("dryWeight") ~ "weight_adult.dry",
     trait_name %in% c("eggWeight") ~ "weight_egg",
     trait_name %in% c("bodyLengthMax") ~ "length_adult.max",
     ## Others
