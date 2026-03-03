@@ -226,6 +226,16 @@ trt_v8 <- trt_v7 %>%
   ### Ditch all binary diet columns
   dplyr::select(-dplyr::starts_with(c("diet_herbivore", "diet_omnivore", "diet_carnivore",
                                       "diet_invertivore", "diet_detritivore"))) %>%
+  ### Change diet trophic level specific ordinal
+  dplyr::mutate(diet_trophic.level_num = dplyr::case_when(
+      #!is.na(diet_trophic.level.specific_ordinal) ~ diet_trophic.level.specific_ordinal,
+      diet_trophic.level.specific_ordinal %in% c("herbivore", "nectarivore","frugivore",
+                                               "granivore","herbivore aquatic", "herbivore terrestrial",
+                                               "detritivore") ~ 2,
+      diet_trophic.level.specific_ordinal == "invertivore" ~ 3,
+      diet_trophic.level.specific_ordinal == "omnivore" ~ 2.5,
+      diet_trophic.level.specific_ordinal %in% c("aquatic predator", "carnivore", "vertivore") ~ 4,
+      T ~ diet_trophic.level_num)) %>%
   # Reproduction traits - synonymize where possible
   ### Collapse binary reproductive modes into one ordinal column
   dplyr::mutate(reproduction_reproductive.mode_ordinal = dplyr::case_when(
@@ -328,7 +338,7 @@ trt_v9 <- trt_v8 %>%
     T ~ genus)) %>% 
   # Identify scientific names where possible
   dplyr::mutate(scientific_name = dplyr::case_when(
-    !is.na(scientific_name) ~ scientific_name,
+    #!is.na(scientific_name) ~ scientific_name, #removed would not run since thinks column exists 
     stringr::str_detect(string = taxon, pattern = " ") ~ taxon,
     stringr::str_detect(string = taxon, pattern = "_") ~ gsub(pattern = "_", replacement = ".", x = taxon),
     !is.na(genus) & !is.na(species) ~ paste0(genus, " ", species),
@@ -342,6 +352,8 @@ trt_v9 <- trt_v8 %>%
 
 # Check that out
 dplyr::glimpse(trt_v9)
+
+#
 
 ## ------------------------------ ##
 # Prepare Consumer Taxa List ----
@@ -395,7 +407,7 @@ trt_v10 <- trt_v9 %>%
   dplyr::left_join(x = ., y = sp_pro_list, 
     by = c("class", "order", "family", "genus", "scientific_name")) %>% 
   ## Ditch unwanted columns
-  dplyr::select(-project:-phylum) %>% 
+  #dplyr::select(-project:-phylum) %>% 
   # Attach genus level information
   dplyr::left_join(x = ., y = gen_pro_list,
     by = c("class", "order", "family", "genus")) %>% 
