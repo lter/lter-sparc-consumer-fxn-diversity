@@ -15,7 +15,7 @@ source("00_setup.R")
 rm(list = ls()); gc()
 
 # do we want to check species 
-run_species_check <- "N"
+run_species_check <- "Y"
 
 # read in the harmonized data
 df <- read.csv(file.path("Data", "community_tidy-data","02_community_wrangled.csv"),stringsAsFactors = F,na.strings =c(""))
@@ -124,7 +124,31 @@ cnd1<-cnd %>%
 #check differences in column names and check column names to prepare to combine all consumer data
 # setdiff(sort(names(exc_df)),sort(names(cnd1)))
 comball <- rbind(exc_df, cnd1) %>%
-  dplyr::select(all_of(col_list)) 
+  dplyr::select(all_of(col_list)) %>%
+  mutate(scientific_name = dplyr::case_when(
+    scientific_name == "Clinid" ~ "Clinidae", #still no match
+    scientific_name == "Cichlasoma urophthalmus" ~ "Cichlasoma urophthalma",
+    scientific_name == "Aphrododerus sayanus" ~ "Apredoderus sayanus",
+    scientific_name == "Farfantepenaeus duorarum" ~ "Penaeus duorarum",
+    scientific_name == "Gambusia holbrooki" ~ "Gambusia affinis", 
+    scientific_name == "Kleptolebias marmoratus" ~ "Kryptolebias marmoratus",
+    scientific_name == "Palaemonetes pugio" ~ "Palaemon pugio", #still no match
+    scientific_name == "Ulvicola sanctaerosae" ~ "Apodichthys sanctaerosae", 
+    scientific_name == "Urolophus halleri" ~ "Urobatis halleri",
+    scientific_name == "Haemulon californiensis" ~ "Brachygenys californiensis",
+    scientific_name == "Carangoides ferdau" ~ "Ferdauia ferdau",
+    scientific_name == "Carangoides orthogrammus" ~ "Ferdauia orthogrammus",
+    scientific_name == "Monotaxis" ~ "Monotaxis Bennett",
+    scientific_name == "Pomachromis fuscidorsalis" ~ "Pomacentrus fuscidorsalis",
+    scientific_name == "Acari" ~ "Arachnida",
+    scientific_name == "Decapodiformes" ~ "Cephalopoda",  #still no match
+    scientific_name == "Doliopsis" ~ "Doliopsidae",
+    scientific_name == "Gaetanus intermedius" ~ "Gaetanus simplex",  #still no match
+    scientific_name == "Pandalopsis dispar" ~ "Pandalus dispar",  #still no match
+    scientific_name == "Tessarabrachion oculatum" ~ "Tessarabrachion oculatus",
+    scientific_name == "Undeuchaeta bispinosa" ~ "Undeuchaeta intermedia",
+    scientific_name == "Coelenterata" ~ "Cnidaria"  #still no match
+    ))
 
 
 ##########Only run this if we need to check the species against ITIS###############
