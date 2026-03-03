@@ -283,13 +283,19 @@ com_dt4 <- com_dt3 #  [,-31] #remove boolean column
  ########################Reef Life Survey Australian Sites #############################
 
  RLS <- com_dt %>%
-   dplyr::filter(project == "RLS")
+  dplyr::filter(project == "RLS") %>%
+  dplyr::filter(!sp_code %in% c("No species found", "Gobiodon sp. [1 GA]", "Gobiodon sp. [3 GA]", 
+                                "Lethrinus sp. [punctulatus]", "Neophoca cinerea", "Octopus cyanea",
+                                "Octopus spp.", "Octopus tetricus", "Unidentified fish (cryptic)",
+                                "Sepia spp.", "Cheloniidae spp.", "Bolinopsis spp." ,"Vanderhorstia sp. [phaeosticta]")) #remove non-fish species; instances of no data for sp_code and unspecified sp.
 
  # call in dry weight conversions
  dm_conversion <- read.csv(file=file.path('Data', "community_raw-data", "dm_conversions_cndwg.csv"),na.strings=c("NA","NA ",""))
 
 
  #obtain individual biomass
+ #site = program
+ #subsite_level1 = site 
  #subsite_level2 = method
  #subsite_level3 = block
  #for each block for method 1 a total of 250m2 surveyed
@@ -332,10 +338,12 @@ com_dt4 <- com_dt3 #  [,-31] #remove boolean column
    dplyr::select(-ind_bio)
 
  
- RLS_and_BottomTrawl_Fish_dietcat <-read.csv(file=file.path('Data', "community_raw-data", "RLS_FISHGLOB_updated_diet.csv"),na.strings=c("NA","NA ",""),strip.white = T)
+ RLS_all_Fish_dietcat <-read.csv(file=file.path('Data', "community_raw-data", "RLS_updated_diet_data_v3_assigned.csv"),na.strings=c("NA","NA ",""),strip.white = T)
 
- diet_cat_1 <- RLS_and_BottomTrawl_Fish_dietcat[,-c(1,3:6,8:9)] %>%
-   distinct()
+ diet_cat_1 <-  RLS_all_Fish_dietcat[,-c(1, 3:7,9:11)] %>% 
+   distinct() %>%
+   rename(diet_cat = diet_cat_updated) #rename column
+   
 
  RLS_den_dm2 <- RLS_den_dm %>%
   left_join(diet_cat_1, by = c("sp_code" = "taxon"))
