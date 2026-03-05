@@ -15,7 +15,7 @@ source("00_setup.R")
 rm(list = ls()); gc()
 
 # do we want to check species 
-run_species_check <- "Y"
+run_species_check <- "N"
 
 # read in the harmonized data
 df <- read.csv(file.path("Data", "community_tidy-data","02_community_wrangled.csv"),stringsAsFactors = F,na.strings =c(""))
