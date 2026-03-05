@@ -228,13 +228,17 @@ trt_v8 <- trt_v7 %>%
                                       "diet_invertivore", "diet_detritivore"))) %>%
   ### Change diet trophic level specific ordinal
   dplyr::mutate(diet_trophic.level_num = dplyr::case_when(
-      #!is.na(diet_trophic.level.specific_ordinal) ~ diet_trophic.level.specific_ordinal,
+      #!is.na(diet_trophic.level.specific_ordinal) ~ diet_trophic.level.specific_ordinal, #change all names tolower later
       diet_trophic.level.specific_ordinal %in% c("herbivore", "nectarivore","frugivore",
                                                "granivore","herbivore aquatic", "herbivore terrestrial",
-                                               "detritivore") ~ 2,
-      diet_trophic.level.specific_ordinal == "invertivore" ~ 3,
-      diet_trophic.level.specific_ordinal == "omnivore" ~ 2.5,
-      diet_trophic.level.specific_ordinal %in% c("aquatic predator", "carnivore", "vertivore") ~ 4,
+                                               "detritivore", "PlantSeed", "FruiNect",
+                                               "Herbivore", "Plant", "Seed", "Fruit",
+                                               "Nectar", "Beeswax") ~ 2,
+      diet_trophic.level.specific_ordinal %in% c("invertivore", "Invertebrate", "invertebrate") ~ 3,
+      diet_trophic.level.specific_ordinal %in% c("omnivore","Omnivore", "Scavenger") ~ 2.5,
+      diet_trophic.level.specific_ordinal %in% c("aquatic predator", "carnivore", "vertivore",
+                                                 "VertFishScav", "Carnivore", "Vertebrate", 
+                                                 "Ovivore","Fish") ~ 4,
       T ~ diet_trophic.level_num)) %>%
   # Reproduction traits - synonymize where possible
   ### Collapse binary reproductive modes into one ordinal column
@@ -442,3 +446,15 @@ trait_path <- file.path("Data", "traits_tidy-data", trait_file)
 write.csv(x = trt_v99, na = '', row.names = F, file = trait_path)
 
 # End ----
+
+
+
+###### Basement#########
+#checks
+
+#birdbase <- trt_v8 %>%
+ # dplyr::filter(source == "birdbase_clean_v2.csv")
+
+#unique(birdbase$diet_trophic.level_num)
+
+
