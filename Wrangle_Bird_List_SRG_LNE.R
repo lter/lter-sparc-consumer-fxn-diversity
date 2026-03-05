@@ -272,7 +272,7 @@ dplyr::glimpse(mb_v99)
 
 # Identify the file name & path
 bird_file <- "master_birdlist.csv"
-bird_path <- file.path("Data", "species_raw-data", bird_file)
+bird_path <- file.path("Data", "species_tidy-data", bird_file)
 
 # Export locally
 write.csv(x =  mb_v99, na = '', row.names = F, file = bird_path)  
