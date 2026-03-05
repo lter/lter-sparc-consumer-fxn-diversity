@@ -42,12 +42,23 @@ ter_v2 <- ter_v1 |>
 # Check structure
 dplyr::glimpse(ter_v2)
 
+
+# Read in bird list from sites we will use for community data 
+
+bird_list_v1 <- read.csv(file.path("Data", "species_tidy-data", "master_birdlist.csv")) %>%
+  dplyr::mutate(family = word(family, 1)) %>% #common name etc present in some rows so remove
+  dplyr::filter(!str_starts(scientific_name, "Unidentified")) %>%
+  dplyr::filter(!str_starts(scientific_name, "Not_")) %>%
+  dplyr::mutate(phylum = "Chordate", kingdom = "Animalia") %>%
+  dplyr::relocate(kingdom, phylum, .before = class) %>%
+  dplyr::relocate(scientific_name, .before = kingdom)
+
 ## --------------------------- ##
 # Combine Data ----
 ## --------------------------- ##
 
 # Combine the two species lists to get a single master list
-master_v1 <- dplyr::bind_rows(aqu_v2, ter_v2)
+master_v1 <- dplyr::bind_rows(aqu_v2, ter_v2, bird_list_v1)
 
 # Check structure
 dplyr::glimpse(master_v1)
