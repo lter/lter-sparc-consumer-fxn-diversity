@@ -287,7 +287,9 @@ com_dt4 <- com_dt3 #  [,-31] #remove boolean column
   dplyr::filter(!sp_code %in% c("No species found", "Gobiodon sp. [1 GA]", "Gobiodon sp. [3 GA]", 
                                 "Lethrinus sp. [punctulatus]", "Neophoca cinerea", "Octopus cyanea",
                                 "Octopus spp.", "Octopus tetricus", "Unidentified fish (cryptic)",
-                                "Sepia spp.", "Cheloniidae spp.", "Bolinopsis spp." ,"Vanderhorstia sp. [phaeosticta]")) #remove non-fish species; instances of no data for sp_code and unspecified sp.
+                                "Sepia spp.", "Cheloniidae spp.", "Bolinopsis spp." ,"Vanderhorstia sp. [phaeosticta]")) %>% #remove non-fish species; instances of no data for sp_code and unspecified sp.
+  dplyr::mutate(genus = word(species,1)) %>% # fill in genus information 
+  dplyr::mutate(kingdom = "Animalia")
 
  # call in dry weight conversions
  dm_conversion <- read.csv(file=file.path('Data', "community_raw-data", "dm_conversions_cndwg.csv"),na.strings=c("NA","NA ",""))
