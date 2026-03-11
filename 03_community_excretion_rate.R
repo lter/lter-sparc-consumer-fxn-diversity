@@ -15,7 +15,7 @@ source("00_setup.R")
 rm(list = ls()); gc()
 
 # do we want to check species 
-run_species_check <- "Y"
+run_species_check <- "N"
 
 # read in the harmonized data
 df <- read.csv(file.path("Data", "community_tidy-data","02_community_wrangled.csv"),stringsAsFactors = F,na.strings =c(""))
@@ -125,15 +125,13 @@ cnd1<-cnd %>%
 # setdiff(sort(names(exc_df)),sort(names(cnd1)))
 comball <- rbind(exc_df, cnd1) %>%
   dplyr::select(all_of(col_list)) %>%
-   mutate(scientific_name = sub("\\s+spp?\\.?$", "", scientific_name),
-        scientific_name = trimws(scientific_name)) %>%
   mutate(scientific_name = dplyr::case_when(
-    scientific_name == "Clinid" ~ "Clinidae", 
+    scientific_name == "Clinid" ~ "Clinidae", #still no match
     scientific_name == "Cichlasoma urophthalmus" ~ "Cichlasoma urophthalma",
-    scientific_name == "Aphrododerus sayanus" ~ "Aphredoderus sayanus", #Li changed it
+    scientific_name == "Aphrododerus sayanus" ~ "Apredoderus sayanus",
     scientific_name == "Farfantepenaeus duorarum" ~ "Penaeus duorarum",
     scientific_name == "Gambusia holbrooki" ~ "Gambusia affinis", 
-    scientific_name == "Kleptolebias marmoratus" ~ "Rivulus marmoratus", #Li changed it
+    scientific_name == "Kleptolebias marmoratus" ~ "Kryptolebias marmoratus",
     scientific_name == "Palaemonetes pugio" ~ "Palaemon pugio", #still no match
     scientific_name == "Ulvicola sanctaerosae" ~ "Apodichthys sanctaerosae", 
     scientific_name == "Urolophus halleri" ~ "Urobatis halleri",
@@ -150,10 +148,7 @@ comball <- rbind(exc_df, cnd1) %>%
     scientific_name == "Tessarabrachion oculatum" ~ "Tessarabrachion oculatus",
     scientific_name == "Undeuchaeta bispinosa" ~ "Undeuchaeta intermedia",
     scientific_name == "Coelenterata" ~ "Cnidaria",  #still no match
-    scientific_name == "Brachygenys californiensis" ~ "Brachygenys californiensis",  #still no match # Li CONFIRMED THIS on the worms
-    scientific_name == "Monotaxis Bennett" ~ "Monotaxis",  #Li changed it
-    scientific_name == "Doliopsidae" ~ "Doliopsidae",   #still no match # Li CONFIRMED THIS on the worms
-    TRUE ~ scientific_name
+    T ~ scientific_name #keep all other scientific names 
     ))
 
 
@@ -187,6 +182,8 @@ taxa_check <- comball %>%
  #select the scientific_name column. This column originally filled based on LTER sites reported species names
  dplyr::select(scientific_name)%>%
 #Grab all unique species names
+ mutate(scientific_name = sub("\\s+spp?\\.?$", "", scientific_name),
+        scientific_name = trimws(scientific_name)) %>%
  dplyr::distinct() %>%
 #exclude the species that have already been checked and have a match in the spe_check1 dataset
  dplyr::filter(!scientific_name %in% spe_check1$scientific_name) %>%
@@ -247,10 +244,6 @@ taxa_check_v2[taxa_check_v2 == "NA"] <- NA
 #combine with spe_check1 to get the full list of species and their taxonomic information
 taxa_check_v3<- rbind(spe_check1, taxa_check_v2) %>%
   arrange(kingdom, phylum, class, order, family, genus, species)
-
-  # #temporary output for shalanda to check the missing species name
-  # write.csv(x = taxa_check, row.names = F, na = '',
-  #         file = file.path("Data", "community_tidy-data","taxa_itis_checked_temp_missing_species.csv"))
   
 write.csv(x = taxa_check_v3, row.names = F, na = '',
           file = file.path("Data", "community_tidy-data","04_all_community_taxa_itis_checked.csv"))
