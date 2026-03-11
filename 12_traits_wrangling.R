@@ -327,12 +327,35 @@ dplyr::glimpse(trt_v8)
 # We didn't lose anything intentionally, right?
 supportR::diff_check(old = names(trt_v7), new = names(trt_v8))
 
+#add diet_trophic.level_num for zooplankton based on diet_trophic.level_ordinal
+trt_v9 <- trt_v8 %>%
+  dplyr::mutate(diet_trophic.level_num = dplyr::case_when(
+    diet_trophic.level_ordinal %in% "Herbivore" & source %in% "Functionaltraitsmatrix.csv" ~ 2,
+    diet_trophic.level_ordinal %in% "Carnivore" & source %in% "Functionaltraitsmatrix.csv" ~ 3.5,
+    diet_trophic.level_ordinal %in% "Omnivore" & source %in% "Functionaltraitsmatrix.csv" ~ 2.5,
+    diet_trophic.level_ordinal %in% "Omnivore/Carnivore" & source %in% "Functionaltraitsmatrix.csv" ~ 3,
+    diet_trophic.level_ordinal %in% "Omnivore/Herbivore" & source %in% "Functionaltraitsmatrix.csv" ~ 2.5,
+    diet_trophic.level_ordinal %in% c("herbivore", "detritivore",
+                                      "suspension feeder") & source %in% "trait_dataset_level2-2023-09-14.csv" ~ 2,
+    diet_trophic.level_ordinal %in% c("omnivore", "omnivore; herbivore", "omnivore; detritivore" ,
+                                      "suspension feeder; omnivore; herbivore") & source %in% "trait_dataset_level2-2023-09-14.csv" ~ 2.5,
+    diet_trophic.level_ordinal %in% c("omnivore; carnivore", "omnivore;carnivore; suspension feeder",
+                                      "carnivore; omnivore; carnivore") & source %in% "trait_dataset_level2-2023-09-14.csv" ~ 3,
+    diet_trophic.level_ordinal %in% "carnivore" & source %in% "trait_dataset_level2-2023-09-14.csv" ~ 3.5,
+    diet_trophic.level_ordinal %in% "Herbivore" & source %in% "zooplankton_traits.csv" ~ 2,
+    diet_trophic.level_ordinal %in% c("Carnivore", "Predator") & source %in% "zooplankton_traits.csv" ~ 3.5,
+    diet_trophic.level_ordinal %in% "Omnivore" & source %in% "zooplankton_traits.csv" ~ 2.5,
+    diet_trophic.level_ordinal %in% "OmniCarn" & source %in% "zooplankton_traits.csv" ~ 3,
+    diet_trophic.level_ordinal %in% "OmniHerb" & source %in% "zooplankton_traits.csv" ~ 2.5,
+    T ~ diet_trophic.level_num))
+
+
 ## --------------------------- ##
 # Wrangle Taxonomic Info ----
 ## --------------------------- ##
 
 # Need to get a tidy scientific name column
-trt_v9 <- trt_v8 %>% 
+trt_v10 <- trt_v9 %>% 
   # Fill in missing taxonomic info where possible
   dplyr::mutate(family = dplyr::case_when(
     is.na(family) & tolower(taxonomic.resolution) == "family" ~ taxon,
@@ -355,7 +378,7 @@ trt_v9 <- trt_v8 %>%
     .fns = ~ ifelse(nchar(.) == 0, yes = NA, no = .)))
 
 # Check that out
-dplyr::glimpse(trt_v9)
+dplyr::glimpse(trt_v10)
 
 #
 
@@ -398,12 +421,21 @@ ord_pro_list <- fam_pro_list %>%
   dplyr::distinct() %>% 
   dplyr::filter(!is.na(order) & nchar(order) != 0)
 
+# Make another without order
+class_pro_list <- ord_pro_list %>%
+  dplyr::select(-order) %>% 
+  dplyr::distinct() %>% 
+  dplyr::filter(!is.na(class) & nchar(class) != 0)
+
+# Check structure
+dplyr::glimpse(class_pro_list)
+
 ## ------------------------------ ##
 # Join Traits w/ Consumer Taxa List ----
 ## ------------------------------ ##
 
 # Connect trait info with consumer species list
-trt_v10 <- trt_v9 %>% 
+trt_v11 <- trt_v10 %>% 
   # Get taxonomic columns grouped together
   dplyr::relocate(class, order, family, genus, scientific_name,
     .before = dplyr::everything()) %>% 
@@ -420,20 +452,35 @@ trt_v10 <- trt_v9 %>%
     by = c("class", "order", "family")) %>% 
   # And order-level
   dplyr::left_join(x = ., y = ord_pro_list,
-    by = c("class", "order"))
+    by = c("class", "order")) %>%
+  # And class-level
+  dplyr::left_join(x = ., y = class_pro_list,
+    by = c("class")) 
 
 # Check structure
-dplyr::glimpse(trt_v10)
+dplyr::glimpse(trt_v11)
 
 # Does that resolve any missing values?
-sum(is.na(trt_v9$order)); sum(is.na(trt_v10$order))
+sum(is.na(trt_v10$order)); sum(is.na(trt_v11$order))
+
+# rejoin sp_pro list to fill NA in class column and keep all other columns
+
+trt_v12 <- trt_v11 %>%
+  dplyr::left_join(sp_pro_list, by = "scientific_name", suffix = c(".x", ".y")) %>%
+  dplyr::mutate(class = coalesce(class.x, class.y),
+                order = coalesce(order.x, order.y),
+                family = coalesce(family.x, family.y),
+                genus = coalesce(genus.x, genus.y))  %>%
+  dplyr::select(-ends_with(".x"), -ends_with(".y")) %>%
+  dplyr::relocate(class, order, family, genus, .before = "scientific_name")
+
 
 ## --------------------------- ##
 # Export ----
 ## --------------------------- ##
 
 # Make a final object
-trt_v99 <- trt_v10
+trt_v99 <- trt_v12
 
 # Check structure
 dplyr::glimpse(trt_v99)
