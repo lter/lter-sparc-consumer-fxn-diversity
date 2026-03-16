@@ -179,7 +179,21 @@ spp_diet_v2 <- spp_diet_v1 %>%
   dplyr::summarise(diet_trophic.level_num = mean(Troph, na.rm= TRUE))%>%
   dplyr::rename(scientific_name = Species)
 
-spp_diet_ready <- spp_diet_v2
+# Diet available only for part of our species: use estimates from models 
+# (fishbase - using length and diet composition) to complete
+spp_missing_diet <- setdiff(spp_names_val, spp_diet_v2$scientific_name)
+fish_TL <- rfishbase::estimate(species_list = spp_missing_diet,
+                               server = c("fishbase", "sealifebase"),
+                               version = "latest")
+fish_TL_clean <- fish_TL %>% 
+  dplyr::select(c("Species", "Troph")) %>% 
+  dplyr::rename(scientific_name = "Species") %>% 
+  dplyr::rename(diet_trophic.level_num = "Troph")
+
+# Add new traits data to previously retrieved one:
+spp_diet_v3 <- rbind(spp_diet_v2, fish_TL_clean)
+
+spp_diet_ready <- spp_diet_v3
 
 
 ###grab species list and merge all traits by scientific name 
