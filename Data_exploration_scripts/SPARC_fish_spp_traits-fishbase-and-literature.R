@@ -3,7 +3,7 @@
 #######################
 
 
-#Purpose: Combine fish traits from FishBase and fish trait data from peer reviewed papers to create a fish database for fish species found across working 
+#Purpose: Combine fish traits from FishBase to create a fish database for fish species found across working 
 #         group data sets (SPARC fish species). 
 
 #Note: Will retroactively harmonize later to make reproducible. 
@@ -23,9 +23,9 @@ rm(list = ls()); gc()
 ###################
 #Load Consumer Data 
 ##################
+#estimate(species_list, fields = c("SpecCode", "ScientificName", "Lmax", "K"))
 
-
-#rename dataframes 
+#rename data frames 
 
 # Read in aquatic consumer species data 
 data_v1 <- read.csv(file.path("Data", "community_tidy-data", "04_harmonized_consumer_excretion_sparc_cnd_site.csv"))
@@ -53,7 +53,7 @@ spp_names_distinct <- data_v1 %>%
 
 
 spp_names_v1 <- data_v2 %>%
-  filter(project %in% c("MCR", "SBC", "FCE", "CoastalCA", "VCR", "PIE", "RLS", "FISHGLOB")) %>%
+  filter(project %in% c("MCR", "SBC", "FCE", "CoastalCA", "VCR", "PIE", "RLS")) %>%
   select(project, scientific_name) %>%
   distinct() 
 
@@ -72,6 +72,11 @@ spp_names_val_df <- as.data.frame(spp_names_val) #turn list of validated names i
 spp_names_val_df2 <- spp_names_val_df %>%
   distinct() %>% #grab unique taxa names only no replicates. There are replicates because some projects have similar species
   dplyr::rename(scientific_name = spp_names_val)
+
+
+#go back and re-run all names regardless is names are validated or not 
+
+
 ################## end #############################################
 
 
@@ -190,7 +195,7 @@ fish_spp_traits_rfishbase <- spp_names_val_df2 %>%
 
 
 # Calculate fish wet weights when possible using a and b conversion factors/parameters from fish base and average fish length. 
-# Note: A lot of variation since some sources from diff geographic regions and locations so filler for now
+# Note: A lot of variation since some sources from diff geographic regions and locations 
 
 length_weight_data <- length_weight(spp_names_val)
 
@@ -203,6 +208,7 @@ avg_lengths_v2 <- avg_length %>%
   dplyr::summarise(spp_mean_length = mean(group_length, na.rm=TRUE))
 
 fish_length_conversion_fct <- length_weight_data %>%
+  dplyr::filter(!a > 2.0)%>% #Mustelus antarcticus had an unusually high a value from Fishbase so exclude 
   dplyr::select(Species, a,b) %>%
   dplyr::group_by(Species) %>%
   dplyr::summarise(
@@ -216,7 +222,7 @@ fish_length_wt_conv_info <- merge(avg_lengths_v2, fish_length_conversion_fct)
 fish_biomass_eq_function <- function(length, a_con, b_con){
   fish_biomass_conv <- a_con * (length^b_con)
 }
-  
+
 fish_biomass_rfishbase_conv <- fish_length_wt_conv_info %>%
   dplyr::group_by(Species) %>%
   dplyr::mutate(mass_adult_g = fish_biomass_eq_function(spp_mean_length, mean_a, mean_b)) %>%
@@ -225,7 +231,7 @@ fish_biomass_rfishbase_conv <- fish_length_wt_conv_info %>%
   
 
 fish_biomass_ready <- fish_biomass_rfishbase_conv
-
+options(scipen=999)
 ####### END######################################
 
 
@@ -237,22 +243,22 @@ fish_biomass_ready <- fish_biomass_rfishbase_conv
 ##############################################################
 
 
-spp_trt <- read.csv(file.path("Data", "traits_raw-data", "Fish_species_and_traits.csv"))  
+#spp_trt <- read.csv(file.path("Data", "traits_raw-data", "Fish_species_and_traits.csv"))  
 
-spp_trt_v1 <- spp_trt %>%
-  dplyr::select(Genus, Species, Activity, Diet_Parravicini_2020) %>%
-  dplyr::mutate(scientific_name = paste(Genus, Species, sep = " ")) %>%
-  dplyr::relocate(scientific_name, .before = Genus) %>%
-  dplyr::rename(diet_trophic.level.specific_ordinal = Diet_Parravicini_2020) %>%
-  dplyr::rename(active.time_category_ordinal = Activity) %>%
-  dplyr::mutate(active.time_category_ordinal = case_when(
-    active.time_category_ordinal ==  1 ~ "diurnal",
-    active.time_category_ordinal ==  2 ~ "cathermal",
-    active.time_category_ordinal ==  3 ~ "nocturnal"
-  )) %>%
-  dplyr::select(-Genus, -Species)
+#spp_trt_v1 <- spp_trt %>%
+#  dplyr::select(Genus, Species, Activity, Diet_Parravicini_2020) %>%
+#  dplyr::mutate(scientific_name = paste(Genus, Species, sep = " ")) %>%
+#  dplyr::relocate(scientific_name, .before = Genus) %>%
+#  dplyr::rename(diet_trophic.level.specific_ordinal = Diet_Parravicini_2020) %>%
+#  dplyr::rename(active.time_category_ordinal = Activity) %>%
+#  dplyr::mutate(active.time_category_ordinal = case_when(
+#    active.time_category_ordinal ==  1 ~ "diurnal",
+#    active.time_category_ordinal ==  2 ~ "cathermal",
+#    active.time_category_ordinal ==  3 ~ "nocturnal"
+#  )) %>%
+#  dplyr::select(-Genus, -Species)
 
-spp_trt_ready <- spp_trt_v1
+#spp_trt_ready <- spp_trt_v1
 
 
 
@@ -265,7 +271,7 @@ spp_trt_ready <- spp_trt_v1
 
 
 final_fish_spp_traits <- fish_spp_traits_rfishbase %>%
-  dplyr::left_join(spp_trt_ready, by = "scientific_name") %>% 
+  #dplyr::left_join(spp_trt_ready, by = "scientific_name") %>% 
   dplyr::left_join(fish_biomass_ready, by = "scientific_name")
 
 
@@ -274,7 +280,7 @@ final_fish_spp_traits <- fish_spp_traits_rfishbase %>%
 fish_spp_traits_v99 <- final_fish_spp_traits
 
 # Identify the file name & path
-sparc_fish_file <- "SPARC_fish_spp-traits-fishbase-and-lit.csv"
+sparc_fish_file <- "SPARC_fish_spp-traits-fishbase-and-lit_v2.csv"
 sparc_fish_path <- file.path("Data", "traits_raw-data", sparc_fish_file)
 
 # Export locally
@@ -282,5 +288,3 @@ write.csv(x = fish_spp_traits_v99, na = '', row.names = F, file = sparc_fish_pat
 
 #------- End ----------------------
 
-
-#save and share with Camille 
