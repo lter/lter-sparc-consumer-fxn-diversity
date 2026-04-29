@@ -10,7 +10,7 @@
 
 
 # Load libraries
-librarian::shelf(tidyverse, rfishbase)
+librarian::shelf(tidyverse, rfishbase, stringr)
 
 
 ### Get set up
@@ -211,15 +211,20 @@ fish_spp_traits_rfishbase <- spp_names_val_df2 %>%
 # Calculate fish wet weights when possible using a and b conversion factors/parameters from fish base and average fish length. 
 # Note: A lot of variation since some sources from diff geographic regions and locations 
 
+
+### some species have estimates for total lengths. Need to calculate species with information for total lengths.
+### species with estimates for SL or FL: Need to  convert total lengths to SL or FL and use available estimates for these lengths when necessary
 length_weight_data <- length_weight(spp_names_val)
 
 avg_length <- length_weight_data %>%
   dplyr::select(Species, LengthMin, LengthMax) %>%
   dplyr::mutate(group_length = rowMeans(select(., LengthMin, LengthMax), na.rm= TRUE)) 
 
+
 avg_lengths_v2 <- avg_length %>%
   dplyr::group_by(Species) %>%
   dplyr::summarise(spp_mean_length = mean(group_length, na.rm=TRUE))
+
 
 fish_length_conversion_fct <- length_weight_data %>%
   dplyr::filter(!a > 2.0)%>% #Mustelus antarcticus had an unusually high a value from Fishbase so exclude 
@@ -229,7 +234,6 @@ fish_length_conversion_fct <- length_weight_data %>%
     mean_a = mean(a, na.rm = TRUE),
     mean_b = mean(b, na.rm = TRUE)
   )
-
 
 fish_length_wt_conv_info <- merge(avg_lengths_v2, fish_length_conversion_fct)
 
@@ -245,6 +249,86 @@ fish_biomass_rfishbase_conv <- fish_length_wt_conv_info %>%
   
 
 fish_biomass_ready <- fish_biomass_rfishbase_conv
+
+
+# see which species are missing length data 
+# given that the remaining species should have length data now should be able to use a and b estimates to calculate weight. 
+# pull a and b estimates and use function to calculate mass
+
+sp_tr_fish_length <- read_csv("sp_tr_fish_length.csv") #species miss mass data from camille's missing traits output
+View(sp_tr_fish_length)
+
+# filter names of species missing mass data but that have length data 
+
+sp_tr_fish_length_v2 <- sp_tr_fish_length[, c(1,5,6)] %>%
+  filter(is.na(tr.mass.adult.g) & !is.na(length_max_cm))
+
+#isolate species names 
+sp_names_tr_length <-sp_tr_fish_length_v2$scientific_name
+
+#validate species names against names found in FishBase 
+sp_tr_fish_names <- validate_names(sp_names_tr_length) 
+
+
+#retrieve a and b estimates 
+
+a_b_estimates <- length_weight(
+  species_list = sp_tr_fish_names,
+  server = c("fishbase", "sealifebase"),
+  version = "latest"
+) # only 47 of 308 with mass data that is missing was retrieved although data for other species present in FishBase but not being retrieved 
+#likely an issue of non-scrapping nature of function and/or updated species name on database that does not reflect nomenclature in our files. see below
+
+unique(a_b_estimates$Species) #47 
+
+#nevertheless will calculate mass then combine with mass ready data 
+
+mean_a_b_estimates<- a_b_estimates  %>%
+  dplyr::select(Species, a, b) %>%
+  dplyr::group_by(Species) %>%
+  dplyr::summarise(
+    mean_a = mean(a, na.rm = TRUE),
+    mean_b = mean(b, na.rm = TRUE)
+  ) %>%
+  dplyr::rename( scientific_name = Species) %>%
+  dplyr::mutate(scientific_name = case_when( # change updated names back to older names reported in our data frame. Fishbase uses Eschmeyer's Catalog of Fishes to check, validate and update names...we have used ITIS
+    scientific_name == "Pycnochromis margaritifer" ~ "Chromis margaritifer",
+    scientific_name == "Bodianus pulcher "~ "Semicossyphus pulcher",
+    scientific_name == "Centropyge fisheri" ~ "Centropyge flavicauda",
+    scientific_name == "Kyphosus azureus" ~ "Hermosilla azurea",
+    scientific_name == "Mirolabrichthys pascalus" ~ "Pseudanthias pascalus",
+    scientific_name == "Ostracion cubicum" ~ "Ostracion cubicus",
+    scientific_name == "Plectroglyphidodon fasciolatus" ~ "Stegastes fasciolatus",
+    scientific_name == "Turrum fulvoguttatum" ~ "Carangoides fulvoguttatus",
+    scientific_name == "Bodianus pulcher" ~ "Semicossyphus pulcher",
+    T ~ scientific_name
+  ))
+
+
+sp_trt_missing_mass <- dplyr::left_join(mean_a_b_estimates, sp_tr_fish_length_v2, by = "scientific_name")
+
+
+sp_trt_fishbase_mass  <- sp_trt_missing_mass %>%
+  dplyr::group_by(scientific_name) %>%
+  dplyr::mutate(tr.mass.adult.g = fish_biomass_eq_function(length_max_cm, mean_a, mean_b)) %>%
+  dplyr::select(-length_max_cm, -mean_a, -mean_b)
+
+
+sp_tr_fish_length_v3 <- dplyr::left_join(sp_tr_fish_length_v2,
+                                         sp_trt_fishbase_mass, by = "scientific_name") %>%
+  dplyr::mutate(tr.mass.adult.g = dplyr::coalesce(tr.mass.adult.g.x, tr.mass.adult.g.y)) %>%
+  dplyr::select(-tr.mass.adult.g.x,-tr.mass.adult.g.y)
+
+# and physically retrieve other missing values and or check names  
+
+sp_remaining_miss_mass <- sp_tr_fish_length_v3 %>%
+  filter(is.na(tr.mass.adult.g)) # <- need a and b estimates for these species 
+
+test_a <- length_weight("Acanthaluteres vittiger")
+
+#write locally to work on outside of script  
+#write_csv(sp_remaining_miss_mass,"/Users/shalandagrier/Documents/Post Doc Projects/SPARC_Consumer_FxN_Diversity/sp_remaining_miss_mass.csv")
+
 options(scipen=999)
 ####### END######################################
 
