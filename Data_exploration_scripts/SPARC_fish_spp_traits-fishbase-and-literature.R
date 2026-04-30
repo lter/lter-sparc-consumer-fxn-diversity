@@ -255,13 +255,16 @@ fish_biomass_ready <- fish_biomass_rfishbase_conv
 # given that the remaining species should have length data now should be able to use a and b estimates to calculate weight. 
 # pull a and b estimates and use function to calculate mass
 
-sp_tr_fish_length <- read_csv("sp_tr_fish_length.csv") #species miss mass data from camille's missing traits output
+sp_tr_fish_length <- read_csv("sp_tr_fish_length.csv") #species missing mass data from Camille's missing traits output
 View(sp_tr_fish_length)
+
 
 # filter names of species missing mass data but that have length data 
 
 sp_tr_fish_length_v2 <- sp_tr_fish_length[, c(1,5,6)] %>%
   filter(is.na(tr.mass.adult.g) & !is.na(length_max_cm))
+
+
 
 #isolate species names 
 sp_names_tr_length <-sp_tr_fish_length_v2$scientific_name
@@ -279,11 +282,14 @@ a_b_estimates <- length_weight(
 ) # only 47 of 308 with mass data that is missing was retrieved although data for other species present in FishBase but not being retrieved 
 #likely an issue of non-scrapping nature of function and/or updated species name on database that does not reflect nomenclature in our files. see below
 
-unique(a_b_estimates$Species) #47 
+ 
+a_b_estimates_v2 <- a_b_estimates %>%
+  dplyr::filter(Type == "TL") #34 species 
 
 #nevertheless will calculate mass then combine with mass ready data 
+#only use data with Total length information 
 
-mean_a_b_estimates<- a_b_estimates  %>%
+mean_a_b_estimates<- a_b_estimates_v2  %>%
   dplyr::select(Species, a, b) %>%
   dplyr::group_by(Species) %>%
   dplyr::summarise(
@@ -319,15 +325,49 @@ sp_tr_fish_length_v3 <- dplyr::left_join(sp_tr_fish_length_v2,
   dplyr::mutate(tr.mass.adult.g = dplyr::coalesce(tr.mass.adult.g.x, tr.mass.adult.g.y)) %>%
   dplyr::select(-tr.mass.adult.g.x,-tr.mass.adult.g.y)
 
+
+### match missing species with species with data from MCR_data_conversion [knb-lter-mcr.6001.7]
+
+MCR_LTER_Fish_Weight_Con <- read.csv("MCR_LTER_Reference_Fish_Weight_Conversion_20260224.csv") %>%
+  dplyr::rename(scientific_name = species)
+
+MCR_LTER_Fish_Weight_Con$totlen2forklen <- as.numeric(MCR_LTER_Fish_Weight_Con$totlen2forklen)
+MCR_LTER_Fish_Weight_Con$a <- as.numeric(MCR_LTER_Fish_Weight_Con$a)
+MCR_LTER_Fish_Weight_Con$b <- as.numeric(MCR_LTER_Fish_Weight_Con$b)
+
+#notes for later 
+#tolen2forklen - value equals parameter Lb. FL = Lb * Total Length (TL). Lb estimated from photograph from FishBase
+# W = a x FL^b; W = a x TL^b; W = a x SL^b. Must match appropriate estimates 
+#MCR-LTER conversion Lb = 1 if no info available = overestimation of FL 
+
+
+sp_tr_fish_conversions <- dplyr::left_join(sp_tr_fish_length_v3, MCR_LTER_Fish_Weight_Con, by = "scientific_name")
+
+#Calculate mass values for species with fork length a and b estimates source knb-lter-mcr.6001.7 - Kulbicki  
+sp_tr_fish_length_FL <- sp_tr_fish_conversions %>%
+  dplyr::filter(length_code == "FL") %>%
+  dplyr::mutate(length_FL = totlen2forklen*length_max_cm) %>%
+  dplyr::mutate(tr.mass.adult.g = 
+                  a * length_FL^b) %>%
+  dplyr::select(scientific_name, tr.mass.adult.g)
+
+sp_tr_fish_length_v4 <- dplyr::left_join(sp_tr_fish_length_v3, sp_tr_fish_length_FL,
+                                         by = "scientific_name") %>%
+  dplyr::mutate(tr.mass.adult.g = dplyr::coalesce(tr.mass.adult.g.x, tr.mass.adult.g.y)) %>%
+  dplyr::select(-tr.mass.adult.g.x,-tr.mass.adult.g.y)
+  
+  
+
+#remaining values focus on exported excel sheet
+
 # and physically retrieve other missing values and or check names  
 
-sp_remaining_miss_mass <- sp_tr_fish_length_v3 %>%
+sp_remaining_miss_mass <- sp_tr_fish_length_v4 %>%
   filter(is.na(tr.mass.adult.g)) # <- need a and b estimates for these species 
 
-test_a <- length_weight("Acanthaluteres vittiger")
 
 #write locally to work on outside of script  
-#write_csv(sp_remaining_miss_mass,"/Users/shalandagrier/Documents/Post Doc Projects/SPARC_Consumer_FxN_Diversity/sp_remaining_miss_mass.csv")
+write_csv(sp_remaining_miss_mass,"/Users/shalandagrier/Documents/Post Doc Projects/SPARC_Consumer_FxN_Diversity/sp_remaining_miss_mass.csv")
 
 options(scipen=999)
 ####### END######################################
