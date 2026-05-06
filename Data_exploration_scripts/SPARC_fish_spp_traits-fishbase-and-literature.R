@@ -213,21 +213,18 @@ fish_spp_traits_rfishbase <- spp_names_val_df2 %>%
 
 
 ### some species have estimates for total lengths. Need to calculate species with information for total lengths.
-### species with estimates for SL or FL: Need to  convert total lengths to SL or FL and use available estimates for these lengths when necessary
+### species with estimates for FL: Need to  convert total lengths toFL and use available estimates for these lengths when necessary
 length_weight_data <- length_weight(spp_names_val)
 
+#mean max length froom fishbase length_weight tables
 avg_length <- length_weight_data %>%
-  dplyr::select(Species, LengthMin, LengthMax) %>%
-  dplyr::mutate(group_length = rowMeans(select(., LengthMin, LengthMax), na.rm= TRUE)) 
-
-
-avg_lengths_v2 <- avg_length %>%
+  dplyr::select(Species, LengthMax) %>%
   dplyr::group_by(Species) %>%
-  dplyr::summarise(spp_mean_length = mean(group_length, na.rm=TRUE))
-
+  dplyr::summarize(length_mean_max_cm = mean(LengthMax), na.rm= TRUE)
 
 fish_length_conversion_fct <- length_weight_data %>%
   dplyr::filter(!a > 2.0)%>% #Mustelus antarcticus had an unusually high a value from Fishbase so exclude 
+  dplyr::filter(Type == "TL") %>% # only obtain total length data for now and fill in remainder later 
   dplyr::select(Species, a,b) %>%
   dplyr::group_by(Species) %>%
   dplyr::summarise(
@@ -235,22 +232,64 @@ fish_length_conversion_fct <- length_weight_data %>%
     mean_b = mean(b, na.rm = TRUE)
   )
 
-fish_length_wt_conv_info <- merge(avg_lengths_v2, fish_length_conversion_fct)
 
+#obtain max length for all species. max lengths using fishbase. Lengths from max lengths
+length_max_sp_tr <- length_weight_data  |>
+  dplyr::distinct(Species) |>
+  dplyr::left_join(sp_tr_fish_length, by = c("Species" = "scientific_name")) |> 
+  dplyr::select(Species, length_max_cm) 
+
+#fill in missing length data from length_weight table 
+length_max_sp_tr_v2 <- left_join(length_max_sp_tr, avg_length, by = "Species") %>%
+  dplyr::mutate(length_max_cm = dplyr::coalesce(length_max_cm, length_mean_max_cm)) %>%
+  dplyr::select(-length_mean_max_cm, -na.rm)
+
+
+fish_length_wt_conv_info <- merge(length_max_sp_tr_v2, fish_length_conversion_fct)
+
+#function to estimate fish mass
 fish_biomass_eq_function <- function(length, a_con, b_con){
   fish_biomass_conv <- a_con * (length^b_con)
 }
 
+#Cacluate fish mass using TL conversion estimates
 fish_biomass_rfishbase_conv <- fish_length_wt_conv_info %>%
   dplyr::group_by(Species) %>%
-  dplyr::mutate(mass_adult_g = fish_biomass_eq_function(spp_mean_length, mean_a, mean_b)) %>%
+  dplyr::mutate(mass_adult_g = fish_biomass_eq_function(length_max_cm, mean_a, mean_b)) %>%
   dplyr::rename(scientific_name = Species) %>%
-  dplyr::select(-spp_mean_length, -mean_a, -mean_b)
+  dplyr::select(-length_max_cm, -mean_a, -mean_b)
   
+#retrieve data that has FL conversion estimates and match with MCR_LTER conversions 
 
-fish_biomass_ready <- fish_biomass_rfishbase_conv
+fish_biomass_and_na <- dplyr::left_join(length_max_sp_tr_v2, 
+                                        fish_biomass_rfishbase_conv, by = c("Species" ="scientific_name"))
+
+fish_biomass_and_na_v2 <- left_join(fish_biomass_and_na, MCR_LTER_Fish_Weight_Con,
+                                    by = c("Species" = "scientific_name")) %>%
+  dplyr::filter(is.na(fish_biomass_and_na$mass_adult_g)) %>%
+  dplyr::filter(length_code == "FL") # only 53 species 
+
+fish_biomass_conversion_na <- fish_biomass_and_na_v2 %>%
+  dplyr::mutate(FL_est = totlen2forklen * length_max_cm) %>% #calculate fork length
+  dplyr::mutate(mass_adult_g = a * FL_est^b) %>% #using fork length estimates calculate estimated mass 
+  dplyr::select(1:3) 
+
+fish_biomass_conversion_na_v2 <- left_join(fish_biomass_and_na, fish_biomass_conversion_na[,c(1,3)],
+                                           by = "Species") %>% #in fill missing data complete data frame 
+  dplyr::mutate(mass_adult_g = dplyr::coalesce(mass_adult_g.x, mass_adult_g.y)) %>%
+  dplyr::select(-mass_adult_g.x,-mass_adult_g.y)
+
+fish_biomass_conversion_na_v3 <- dplyr::left_join(fish_biomass_conversion_na_v2, sp_traits_v2[,c(1,7)],
+                                                  by= "Species") %>%
+  dplyr::mutate(mass_adult_g = dplyr::coalesce(mass_adult_g.x, mass_adult_g.y)) %>%
+  dplyr::select(-mass_adult_g.x,-mass_adult_g.y)
+
+#of 555 only 32 without mass 
+fish_biomass_ready <- fish_biomass_conversion_na_v3
 
 
+
+################################################  Checking for missing mass data prior to trait imputation ##################
 # see which species are missing length data 
 # given that the remaining species should have length data now should be able to use a and b estimates to calculate weight. 
 # pull a and b estimates and use function to calculate mass
@@ -263,7 +302,6 @@ View(sp_tr_fish_length)
 
 sp_tr_fish_length_v2 <- sp_tr_fish_length[, c(1,5,6)] %>%
   filter(is.na(tr.mass.adult.g) & !is.na(length_max_cm))
-
 
 
 #isolate species names 
@@ -322,7 +360,7 @@ sp_trt_fishbase_mass  <- sp_trt_missing_mass %>%
 
 sp_tr_fish_length_v3 <- dplyr::left_join(sp_tr_fish_length_v2,
                                          sp_trt_fishbase_mass, by = "scientific_name") %>%
-  dplyr::mutate(tr.mass.adult.g = dplyr::coalesce(tr.mass.adult.g.x, tr.mass.adult.g.y)) %>%
+ dplyr::mutate(tr.mass.adult.g = dplyr::coalesce(tr.mass.adult.g.x, tr.mass.adult.g.y)) %>%
   dplyr::select(-tr.mass.adult.g.x,-tr.mass.adult.g.y)
 
 
@@ -340,7 +378,6 @@ MCR_LTER_Fish_Weight_Con$b <- as.numeric(MCR_LTER_Fish_Weight_Con$b)
 # W = a x FL^b; W = a x TL^b; W = a x SL^b. Must match appropriate estimates 
 #MCR-LTER conversion Lb = 1 if no info available = overestimation of FL 
 
-
 sp_tr_fish_conversions <- dplyr::left_join(sp_tr_fish_length_v3, MCR_LTER_Fish_Weight_Con, by = "scientific_name")
 
 #Calculate mass values for species with fork length a and b estimates source knb-lter-mcr.6001.7 - Kulbicki  
@@ -356,11 +393,10 @@ sp_tr_fish_length_v4 <- dplyr::left_join(sp_tr_fish_length_v3, sp_tr_fish_length
   dplyr::mutate(tr.mass.adult.g = dplyr::coalesce(tr.mass.adult.g.x, tr.mass.adult.g.y)) %>%
   dplyr::select(-tr.mass.adult.g.x,-tr.mass.adult.g.y)
   
-  
 
 #remaining values focus on exported excel sheet
 
-# and physically retrieve other missing values and or check names  
+#and physically retrieve other missing values and or check names  
 
 sp_remaining_miss_mass <- sp_tr_fish_length_v4 %>%
   filter(is.na(tr.mass.adult.g)) # <- need a and b estimates for these species 
@@ -368,6 +404,35 @@ sp_remaining_miss_mass <- sp_tr_fish_length_v4 %>%
 
 #write locally to work on outside of script  
 write_csv(sp_remaining_miss_mass,"/Users/shalandagrier/Documents/Post Doc Projects/SPARC_Consumer_FxN_Diversity/sp_remaining_miss_mass.csv")
+
+#sp with located conversions of Fishbase 
+
+sp_remaining_conversions <- read.csv("sp_remaining_miss_mass_conversions.csv")
+
+
+
+sp_traits_v1 <- dplyr::left_join(sp_tr_fish_length_v4[,c(1,3)],sp_remaining_conversions[,c(1,3)], 
+                          by = "scientific_name") %>%
+  dplyr::mutate(tr.mass.adult.g = dplyr::coalesce(tr.mass.adult.g.x, tr.mass.adult.g.y)) %>%
+  dplyr::select(-tr.mass.adult.g.x,-tr.mass.adult.g.y)
+
+#rejoin with other data frame to review trait coverage
+
+
+sp_traits_v2 <- left_join(sp_tr_fish_length, sp_traits_v1, 
+                          by = "scientific_name") %>%
+  dplyr::mutate(tr.mass.adult.g = dplyr::coalesce(tr.mass.adult.g.x, tr.mass.adult.g.y)) %>%
+  dplyr::select(-tr.mass.adult.g.x,-tr.mass.adult.g.y) # %>%
+#  dplyr::rename(Species =scientific_name ,  mass_adult_g = tr.mass.adult.g)
+
+
+#write locally
+#write_csv(sp_traits_v2,"/Users/shalandagrier/Documents/Post Doc Projects/SPARC_Consumer_FxN_Diversity/sp_tr_mass_fill.csv")
+
+
+
+########################################################################## end filling missing mass check #####333
+
 
 options(scipen=999)
 ####### END######################################
@@ -410,7 +475,7 @@ options(scipen=999)
 
 final_fish_spp_traits <- fish_spp_traits_rfishbase %>%
   #dplyr::left_join(spp_trt_ready, by = "scientific_name") %>% 
-  dplyr::left_join(fish_biomass_ready, by = "scientific_name")
+  dplyr::left_join(fish_biomass_ready, by = c("scientific_name"= "Species"))
 
 
 #### Make final object 
